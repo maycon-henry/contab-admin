@@ -1,0 +1,61 @@
+# Blueprint do Render — ambiente de HOMOLOGAÇÃO (plano gratuito).
+# Deploy só sob demanda: autoDeployTrigger "off" + workflow manual .github/workflows/deploy-render.yml.
+# Detalhes e limitações: docs/adr/0001-hospedagem-render.md
+services:
+  - type: web
+    name: contab-admin
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: main
+    dockerfilePath: ./docker/render/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: "off"
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: Contab Admin
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false # gerar com: docker compose exec app php artisan key:generate --show
+      - key: APP_LOCALE
+        value: pt_BR
+      - key: APP_FALLBACK_LOCALE
+        value: pt_BR
+      - key: APP_TIMEZONE
+        value: America/Sao_Paulo
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        fromDatabase:
+          name: contab-admin-db
+          property: connectionString
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: info
+      - key: MAIL_MAILER
+        value: log # homologação não envia e-mail de verdade; mensagens vão para os logs
+      - key: MAIL_FROM_ADDRESS
+        value: nao-responda@contab.test
+
+databases:
+  - name: contab-admin-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: "17"
+    databaseName: contab
+    user: contab

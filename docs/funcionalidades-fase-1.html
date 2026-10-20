@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Descrição Funcional — Fase 1</title>
+<style>
+  :root {
+    --azul: #1f3a5f;
+    --azul-claro: #e8eef6;
+    --azul-medio: #3d6a9e;
+    --verde: #2e7d4f;
+    --verde-claro: #e9f5ee;
+    --ambar: #a86a00;
+    --ambar-claro: #fff4df;
+    --vermelho: #b23b3b;
+    --vermelho-claro: #fbeaea;
+    --cinza: #5b6573;
+    --cinza-claro: #f3f5f8;
+    --borda: #d5dbe3;
+    --texto: #1d2430;
+  }
+  @page {
+    size: A4;
+    margin: 20mm 17mm 20mm 17mm;
+    @top-right { content: "Descrição funcional — Fase 1"; font: 8pt "Segoe UI", Arial, sans-serif; color: #8a93a0; }
+    @bottom-center { content: "Página " counter(page) " de " counter(pages); font: 8pt "Segoe UI", Arial, sans-serif; color: #8a93a0; }
+  }
+  @page :first {
+    margin: 0;
+    @top-right { content: none; }
+    @bottom-center { content: none; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: var(--texto);
+    background: #fff;
+  }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 16pt; }
+  li { margin-bottom: 2.5pt; }
+  strong { color: #10203a; }
+
+  /* ---------- Capa ---------- */
+  .capa {
+    height: 297mm;
+    width: 210mm;
+    background: var(--azul);
+    color: #fff;
+    padding: 40mm 22mm 25mm;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+  }
+  .capa .selo { font-size: 9pt; letter-spacing: 3pt; text-transform: uppercase; color: #a9c1df; margin-bottom: 14mm; }
+  .capa h1 { font-size: 30pt; line-height: 1.15; margin: 0 0 8mm; font-weight: 600; }
+  .capa .sub { font-size: 15pt; color: #d4e1f1; margin-bottom: 18mm; }
+  .capa .linha { width: 40mm; height: 3px; background: #7fb0e6; margin-bottom: 12mm; }
+  .capa .finalidade { font-size: 11pt; color: #d4e1f1; max-width: 140mm; }
+  .capa .rodape { margin-top: auto; font-size: 10pt; color: #a9c1df; display: flex; justify-content: space-between; border-top: 1px solid #3f5f88; padding-top: 6mm; }
+
+  /* ---------- Títulos ---------- */
+  .parte { page-break-before: always; }
+  .parte-cab {
+    background: var(--azul);
+    color: #fff;
+    padding: 10pt 14pt;
+    border-radius: 4pt;
+    margin-bottom: 14pt;
+  }
+  .parte-cab .num { font-size: 8.5pt; letter-spacing: 2pt; text-transform: uppercase; color: #a9c1df; }
+  .parte-cab h1 { margin: 2pt 0 0; font-size: 18pt; font-weight: 600; }
+  .parte-cab p { margin: 4pt 0 0; color: #d4e1f1; font-size: 9.5pt; }
+  h2 {
+    font-size: 13pt;
+    color: var(--azul);
+    border-bottom: 2px solid var(--azul-claro);
+    padding-bottom: 3pt;
+    margin: 18pt 0 8pt;
+    break-after: avoid;
+  }
+  h2 .n { color: var(--azul-medio); margin-right: 5pt; }
+  h3 {
+    font-size: 10.5pt;
+    color: var(--azul-medio);
+    text-transform: uppercase;
+    letter-spacing: .4pt;
+    margin: 12pt 0 5pt;
+    break-after: avoid;
+  }
+
+  /* ---------- Blocos ---------- */
+  .caixa { border-radius: 4pt; padding: 8pt 11pt; margin: 8pt 0 10pt; break-inside: avoid; }
+  .caixa .rot { font-size: 8pt; font-weight: 700; letter-spacing: 1pt; text-transform: uppercase; margin-bottom: 3pt; display: block; }
+  .exemplo { background: var(--verde-claro); border-left: 4px solid var(--verde); }
+  .exemplo .rot { color: var(--verde); }
+  .regra { background: var(--ambar-claro); border-left: 4px solid var(--ambar); }
+  .regra .rot { color: var(--ambar); }
+  .info { background: var(--azul-claro); border-left: 4px solid var(--azul-medio); }
+  .info .rot { color: var(--azul-medio); }
+  .pendente { background: var(--cinza-claro); border-left: 4px solid var(--cinza); }
+  .pendente .rot { color: var(--cinza); }
+  .caixa p:last-child, .caixa ul:last-child { margin-bottom: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0 10pt; font-size: 9.3pt; }
+  th { background: var(--azul-claro); color: var(--azul); text-align: left; padding: 5pt 7pt; font-weight: 600; border-bottom: 1.5px solid var(--azul-medio); }
+  td { padding: 5pt 7pt; border-bottom: 1px solid var(--borda); vertical-align: top; }
+  tr { break-inside: avoid; }
+  td.k { font-weight: 600; white-space: nowrap; width: 1%; color: #10203a; }
+
+  .tag { display: inline-block; font-size: 8pt; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; letter-spacing: .3pt; white-space: nowrap; }
+  .t-cinza { background: #e4e8ee; color: #3d4652; }
+  .t-azul { background: #dbe7f5; color: #1f4c80; }
+  .t-verde { background: #d8efe1; color: #1f6a40; }
+  .t-vermelho { background: #f6dcdc; color: #962f2f; }
+  .t-ambar { background: #fdebc8; color: #8a5600; }
+
+  .grade3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8pt; margin: 8pt 0 12pt; }
+  .card { border: 1px solid var(--borda); border-top: 4px solid var(--azul-medio); border-radius: 4pt; padding: 8pt 10pt; break-inside: avoid; }
+  .card h4 { margin: 0 0 4pt; font-size: 10.5pt; color: var(--azul); }
+  .card p { font-size: 9pt; margin: 0; }
+
+  /* ---------- Fluxo ---------- */
+  .fluxo { border: 1px solid var(--borda); border-radius: 4pt; padding: 10pt; margin: 8pt 0 12pt; break-inside: avoid; }
+  .fluxo-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14pt; }
+  .fluxo-cols .cab { font-size: 8.5pt; font-weight: 700; letter-spacing: 1pt; text-transform: uppercase; text-align: center; padding: 3pt; border-radius: 3pt; margin-bottom: 6pt; }
+  .cab-emp { background: var(--verde-claro); color: var(--verde); }
+  .cab-esc { background: var(--azul-claro); color: var(--azul); }
+  .passo { border: 1px solid var(--borda); border-radius: 4pt; padding: 5pt 8pt; margin-bottom: 6pt; font-size: 9pt; background: #fff; }
+  .passo b { color: var(--azul); }
+  .vazio { visibility: hidden; }
+  .seta { text-align: center; font-size: 8.5pt; color: var(--cinza); margin: -2pt 0 4pt; }
+
+  .linha-tempo { margin: 6pt 0 10pt; border-left: 3px solid var(--azul-medio); padding-left: 10pt; }
+  .linha-tempo div { margin-bottom: 4pt; break-inside: avoid; }
+  .linha-tempo b { display: inline-block; min-width: 92pt; color: var(--azul); }
+
+  /* ---------- Sumário ---------- */
+  .sumario ol.indice { list-style: none; padding: 0; margin: 0; }
+  .sumario ol.indice > li { border-bottom: 1px dotted var(--borda); padding: 5pt 0; margin: 0; display: flex; gap: 10pt; }
+  .sumario .sn { color: var(--azul-medio); font-weight: 700; width: 55pt; }
+  .sumario a { color: var(--texto); text-decoration: none; }
+  .sumario .sd { color: var(--cinza); font-size: 9pt; }
+
+  /* ---------- Decisões ---------- */
+  .grupo-dec { font-size: 9pt; font-weight: 700; letter-spacing: 1pt; text-transform: uppercase; color: var(--cinza); margin: 14pt 0 6pt; border-bottom: 1px solid var(--borda); padding-bottom: 2pt; break-after: avoid; }
+  .dec { border: 1px solid var(--borda); border-radius: 4pt; padding: 7pt 10pt; margin-bottom: 7pt; break-inside: avoid; }
+  .dec.critica { border-left: 4px solid var(--vermelho); }
+  .dec .topo { display: flex; justify-content: space-between; gap: 8pt; align-items: baseline; }
+  .dec .q { font-weight: 600; color: #10203a; }
+  .dec .q .id { color: var(--azul-medio); margin-right: 5pt; }
+  .dec .ref { font-size: 8pt; color: #8a93a0; white-space: nowrap; }
+  .dec p { margin: 3pt 0 0; font-size: 9.2pt; }
+  .dec .sug { color: var(--verde); }
+  .dec .sug b { color: var(--verde); }
+
+  .glossario td.k { width: 26%; white-space: normal; }
+  .pequeno { font-size: 8.8pt; color: var(--cinza); }
+</style>
+</head>
+<body>
+
+<!-- ======================= CAPA ======================= -->
+<section class="capa">
+  <div class="selo">Documento de alinhamento entre sócios</div>
+  <h1>Sistema de Gestão para Escritórios de Contabilidade</h1>
+  <div class="sub">Descrição funcional da primeira fase</div>
+  <div class="linha"></div>
+  <div class="finalidade">
+    Como o sistema vai se comportar para o administrador, o colaborador e a empresa cliente — e quais decisões de negócio ainda precisam ser tomadas antes do desenvolvimento.
+  </div>
+  <div class="rodape">
+    <span>Versão 1.0</span>
+    <span>Outubro de 2026</span>
+  </div>
+</section>
+
+<!-- ======================= SUMÁRIO ======================= -->
+<section class="sumario">
+  <div class="parte-cab"><div class="num">Conteúdo</div><h1>Sumário</h1></div>
+  <ol class="indice">
+    <li><span class="sn">Início</span><span><a href="#sobre">Sobre este documento</a> <span class="sd">— objetivo, como ler e o exemplo usado</span></span></li>
+    <li><span class="sn">Parte 1</span><span><a href="#p1">Visão geral</a> <span class="sd">— problema, solução, modelo de negócio, usuários, ordem de entrega</span></span></li>
+    <li><span class="sn">Parte 2</span><span><a href="#p2">Conceitos que valem para todos</a> <span class="sd">— acesso, mês de trabalho, documentos do mês, admissão</span></span></li>
+    <li><span class="sn">Parte 3</span><span><a href="#p3">Cenário do administrador</a></span></li>
+    <li><span class="sn">Parte 4</span><span><a href="#p4">Cenário do colaborador</a></span></li>
+    <li><span class="sn">Parte 5</span><span><a href="#p5">Cenário da empresa</a> <span class="sd">— portal da empresa</span></span></li>
+    <li><span class="sn">Parte 6</span><span><a href="#p6">O que o sistema faz sozinho</a> <span class="sd">— rotinas automáticas e avisos</span></span></li>
+    <li><span class="sn">Parte 7</span><span><a href="#p7">Segurança, privacidade e regras legais</a></span></li>
+    <li><span class="sn">Parte 8</span><span><a href="#p8">Fora da primeira fase</a></span></li>
+    <li><span class="sn">Parte 9</span><span><a href="#p9">Decisões pendentes</a> <span class="sd">— para o lado negocial</span></span></li>
+    <li><span class="sn">Anexo</span><span><a href="#glossario">Glossário</a></span></li>
+  </ol>
+
+  <h2 id="sobre">Sobre este documento</h2>
+  <p>Este documento descreve, em linguagem de negócio, como o sistema vai funcionar na primeira fase. Ele serve para:</p>
+  <ul>
+    <li>alinhar entre os sócios o que será construído;</li>
+    <li>dar base para conversas com escritórios interessados;</li>
+    <li>registrar as <strong>decisões de negócio</strong> que ainda precisam ser tomadas (Parte 9), cada uma com o contexto e uma sugestão.</li>
+  </ul>
+  <div class="caixa info">
+    <span class="rot">Como ler</span>
+    <ul>
+      <li>As <strong>Partes 1 e 2</strong> explicam o produto e os conceitos que valem para todos.</li>
+      <li>As <strong>Partes 3, 4 e 5</strong> contam o cenário de cada tipo de usuário: administrador, colaborador e empresa.</li>
+      <li>A <strong>Parte 6</strong> mostra o que o sistema faz sozinho, sem ninguém clicar.</li>
+      <li>As <strong>Partes 7 e 8</strong> tratam de segurança e do que fica para depois.</li>
+      <li>A <strong>Parte 9</strong> lista as decisões pendentes.</li>
+    </ul>
+    <p class="pequeno">Códigos como “ref. RN-589” apontam para a regra correspondente no documento técnico de desenvolvimento. Não é preciso consultá-los para entender o texto.</p>
+  </div>
+  <div class="caixa exemplo">
+    <span class="rot">Exemplo usado ao longo do documento</span>
+    <table>
+      <tr><td class="k">Escritório</td><td>Contabilidade Silva</td></tr>
+      <tr><td class="k">Administradora</td><td>Ana, sócia do escritório</td></tr>
+      <tr><td class="k">Colaborador</td><td>Bruno, da equipe de departamento pessoal</td></tr>
+      <tr><td class="k">Empresa cliente</td><td>Padaria Pão Quente Ltda, atendida pelo escritório</td></tr>
+      <tr><td class="k">Usuária da empresa</td><td>Carla, gerente da padaria</td></tr>
+      <tr><td class="k">Novo funcionário</td><td>João, que será admitido pela padaria</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ======================= PARTE 1 ======================= -->
+<section class="parte" id="p1">
+  <div class="parte-cab"><div class="num">Parte 1</div><h1>Visão geral</h1></div>
+
+  <h2><span class="n">1.1</span>O problema</h2>
+  <p>Hoje, a troca de informações entre escritório e empresas acontece por e-mail, WhatsApp, pastas compartilhadas e telefone. Isso gera:</p>
+  <ul>
+    <li>documentos perdidos ou enviados para a pessoa errada;</li>
+    <li>dificuldade de saber o que cada empresa já entregou no mês;</li>
+    <li>cobrança manual, repetitiva e esquecida;</li>
+    <li>admissões de funcionários com documentos faltando e prazos legais estourados;</li>
+    <li>nenhuma visão de quanto trabalho cada membro da equipe realizou.</li>
+  </ul>
+
+  <h2><span class="n">1.2</span>A solução</h2>
+  <p>Um sistema na internet, acessado pelo navegador, onde:</p>
+  <ul>
+    <li>a <strong>empresa</strong> envia documentos, notas fiscais e pedidos de admissão em um único lugar, sabendo exatamente o que falta e até quando;</li>
+    <li>o <strong>escritório</strong> recebe tudo organizado por empresa e por mês, confere, aceita ou recusa, e registra as admissões;</li>
+    <li>o <strong>sistema cobra automaticamente</strong> as empresas atrasadas, todos os dias, por e-mail;</li>
+    <li>o <strong>administrador</strong> enxerga quem está devendo documentação e quanto cada colaborador produziu.</li>
+  </ul>
+
+  <h2><span class="n">1.3</span>Modelo de negócio</h2>
+  <ul>
+    <li>O sistema é vendido como serviço (assinatura) para escritórios de contabilidade. Vários escritórios usam o mesmo sistema ao mesmo tempo.</li>
+    <li>Cada escritório é <strong>totalmente isolado</strong>: um escritório nunca vê dados de outro, nem sabe que o outro existe.</li>
+    <li>As empresas atendidas também acessam o sistema (portal da empresa), sem custo adicional para elas. Quem assina é o escritório.</li>
+    <li>Nesta fase o sistema é web (navegador, no computador ou no celular). Ele está sendo construído para que, no futuro, existam aplicativos de celular usando exatamente as mesmas regras.</li>
+  </ul>
+
+  <h2><span class="n">1.4</span>Os três tipos de usuário</h2>
+  <div class="grade3">
+    <div class="card"><h4>Administrador</h4><p>Equipe do escritório. Acesso total: empresas, equipe, configurações e relatórios. Todo escritório tem um administrador principal, chamado <strong>titular</strong>.</p></div>
+    <div class="card"><h4>Colaborador</h4><p>Equipe do escritório. Executa o dia a dia: confere documentos, faz admissões, atende as empresas. Acessa apenas o que o seu <strong>perfil</strong> permite.</p></div>
+    <div class="card"><h4>Usuário da empresa</h4><p>Cliente do escritório (sócio, gerente, RH). Acessa o <strong>portal da empresa</strong> e vê somente os dados da(s) empresa(s) a que está ligado.</p></div>
+  </div>
+  <p>Nesta fase existe um único perfil de colaborador, chamado “Colaborador”. O sistema já nasce preparado para outros perfis no futuro (Fiscal, Departamento Pessoal, Financeiro…), bastando criá-los e definir o que cada um pode fazer. Uma pessoa de empresa pode estar ligada a mais de uma empresa do mesmo escritório (por exemplo, o sócio de duas empresas).</p>
+
+  <h2><span class="n">1.5</span>Ordem de entrega da primeira fase</h2>
+  <table>
+    <tr><th style="width:8%">Etapa</th><th>O que é entregue</th></tr>
+    <tr><td class="k">1</td><td><strong>Base:</strong> página pública, login, escritórios, usuários e permissões.</td></tr>
+    <tr><td class="k">2</td><td><strong>Cadastro de empresas clientes.</strong></td></tr>
+    <tr><td class="k">3</td><td><strong>Funcionários:</strong> admissão (pedida pela empresa, registrada pelo escritório) e desligamento.</td></tr>
+    <tr><td class="k">4</td><td><strong>Área de trabalho mensal:</strong> documentos do mês, avaliação e fechamento do mês.</td></tr>
+    <tr><td class="k">5</td><td><strong>Notas fiscais:</strong> envio de XML com organização automática por mês.</td></tr>
+    <tr><td class="k">6</td><td><strong>Painel do administrador, cobrança diária automática e relatório</strong> de admissões por colaborador.</td></tr>
+  </table>
+</section>
+
+<!-- ======================= PARTE 2 ======================= -->
+<section class="parte" id="p2">
+  <div class="parte-cab"><div class="num">Parte 2</div><h1>Conceitos que valem para todos</h1></div>
+
+  <h2><span class="n">2.1</span>Entrada no sistema</h2>
+  <h3>Página pública</h3>
+  <p>O endereço principal do sistema mostra uma página de apresentação do produto com o botão <strong>“Entrar”</strong>. Quem já está logado vê “Ir para o painel”. O conteúdo desta página (textos, planos, preços, contato) ainda será definido (decisão D2).</p>
+
+  <h3>Ninguém cria conta sozinho — o acesso é por convite</h3>
+  <ol>
+    <li>Alguém do escritório cadastra o nome e o e-mail da pessoa.</li>
+    <li>A pessoa recebe um e-mail com um link.</li>
+    <li>Pelo link, ela cria a própria senha e já entra no sistema.</li>
+  </ol>
+  <ul>
+    <li>O link do convite vale por <strong>7 dias</strong>. Pode ser reenviado; ao reenviar, o link anterior deixa de funcionar.</li>
+    <li>Ninguém do escritório define ou vê a senha de outra pessoa.</li>
+    <li>Cada e-mail só pode ser usado por uma pessoa em todo o sistema.</li>
+  </ul>
+
+  <h3>Login</h3>
+  <ul>
+    <li>Todos usam a mesma tela, com e-mail e senha. Depois do login, administrador e colaborador vão para o <strong>painel do escritório</strong>; o usuário da empresa vai para o <strong>portal da empresa</strong>.</li>
+    <li>Se a senha estiver errada, a mensagem é sempre “e-mail ou senha inválidos”, sem dizer se o e-mail existe (proteção contra quem tenta descobrir contas).</li>
+    <li>Depois de <strong>5 tentativas erradas</strong>, o acesso fica bloqueado por <strong>15 minutos</strong>.</li>
+    <li>Opção “manter conectado”. Sem ela, após <strong>2 horas sem uso</strong> o sistema pede login novamente.</li>
+  </ul>
+
+  <h3>Quem não consegue entrar</h3>
+  <ul>
+    <li>Usuário desativado.</li>
+    <li>Usuário que ainda não aceitou o convite.</li>
+    <li>Usuários de um escritório suspenso ou cancelado (ex.: assinatura em atraso). Eles veem uma mensagem pedindo que procurem o administrador.</li>
+    <li>Usuário de empresa que não está ligado a nenhuma empresa ativa.</li>
+  </ul>
+
+  <h3>Senha</h3>
+  <ul>
+    <li>Mínimo de <strong>8 caracteres</strong>, com letras e números. O sistema recusa senhas que já apareceram em vazamentos públicos.</li>
+    <li>“Esqueci minha senha”: link por e-mail, válido por <strong>60 minutos</strong> e de uso único. A tela responde sempre da mesma forma, exista ou não o e-mail.</li>
+    <li>Ao trocar a senha, todas as outras sessões abertas daquela pessoa são encerradas.</li>
+  </ul>
+
+  <h3>Histórico de acessos</h3>
+  <p>Todo login (certo ou errado), saída, troca e recuperação de senha fica registrado com data, hora, local de acesso (IP) e navegador. O administrador pode consultar.</p>
+
+  <h2><span class="n">2.2</span>O mês de trabalho (“competência”)</h2>
+  <p>Todo o trabalho do escritório com uma empresa é organizado <strong>mês a mês</strong>. Cada mês de cada empresa se chama <strong>competência</strong>.</p>
+  <div class="caixa exemplo"><span class="rot">Exemplo</span><p>“Padaria Pão Quente — competência 09/2026” reúne tudo o que se refere a setembro de 2026: documentos, notas fiscais e admissões.</p></div>
+
+  <h3>Área de trabalho</h3>
+  <p>É a tela de uma empresa em um mês.</p>
+  <ul>
+    <li>Ao escolher uma empresa, o sistema abre a área de trabalho no mês padrão (se o padrão é o mês atual ou o anterior ainda será decidido — D11).</li>
+    <li>Para trabalhar em outro mês, troca-se o mês num seletor.</li>
+    <li>Empresa e mês ficam <strong>sempre visíveis</strong> no topo da tela. Se o mês escolhido não for o padrão, aparece um aviso em destaque (“Você está trabalhando em 03/2025”), para evitar que algo seja lançado no mês errado.</li>
+    <li>Só é possível abrir meses desde o início do atendimento da empresa até o mês atual. Meses futuros não podem ser abertos.</li>
+  </ul>
+
+  <h3>O que pertence ao mês e o que não pertence</h3>
+  <table>
+    <tr><th>Não pertencem a um mês (valem sempre)</th><th>Pertencem ao mês em que acontecem</th></tr>
+    <tr><td>Dados da empresa, sócios, filiais, cadastro dos funcionários</td><td>Documentos mensais, notas fiscais, admissões, desligamentos</td></tr>
+  </table>
+
+  <h3>Fechamento do mês</h3>
+  <ul>
+    <li>Quando todos os documentos obrigatórios do mês estiverem resolvidos (aceitos ou marcados como “não se aplica”), o escritório pode <strong>fechar</strong> o mês.</li>
+    <li>Mês fechado vira <strong>somente leitura</strong>: não aceita novos documentos, notas, avaliações ou alterações.</li>
+    <li>Reabrir exige permissão específica e justificativa, e fica registrado.</li>
+    <li>Vários meses podem estar abertos ao mesmo tempo, e não é preciso fechar em ordem.</li>
+  </ul>
+
+  <h2><span class="n">2.3</span>Documentos do mês: catálogo, rotina e itens</h2>
+  <h3>Catálogo de documentos (definido por cada escritório)</h3>
+  <p>Cada escritório decide o que exige das suas empresas todo mês. Um escritório pode exigir certidão negativa municipal mensalmente; outro pode não exigir. Por isso <strong>cada escritório tem o seu catálogo</strong>.</p>
+  <div class="caixa exemplo"><span class="rot">Exemplos de itens de catálogo</span>
+    <p>Extrato bancário · Comprovantes de despesas · Notas fiscais de saída / de entrada · CND Federal (Receita Federal / PGFN) · CRF — Certificado de Regularidade do FGTS · CNDT — Certidão Negativa de Débitos Trabalhistas · CND Estadual · CND Municipal</p>
+  </div>
+  <p>Além de documentos, o catálogo pode ter <strong>tarefas internas</strong> do escritório (ex.: “Conciliação bancária”), que a empresa não vê.</p>
+
+  <h3>Rotina mensal da empresa</h3>
+  <p>É a parte do catálogo que se aplica a uma empresa. Cada item do catálogo diz a quem se aplica: todas as empresas, só as de um regime de impostos (ex.: Lucro Presumido) ou empresas escolhidas. O escritório ainda pode, em cada empresa, dispensar um item (com justificativa) ou mudar prazo e obrigatoriedade só para ela.</p>
+
+  <h3>Itens do mês e suas situações</h3>
+  <p>No <strong>dia 1º de cada mês</strong>, o sistema cria para cada empresa ativa a lista de itens que ela deve entregar daquele mês, conforme a sua rotina.</p>
+  <table>
+    <tr><th style="width:24%">Situação</th><th>Significado</th></tr>
+    <tr><td><span class="tag t-cinza">PENDENTE</span></td><td>A empresa ainda não enviou.</td></tr>
+    <tr><td><span class="tag t-azul">EM AVALIAÇÃO</span></td><td>A empresa enviou (ou informou “sem movimento”); o escritório precisa conferir.</td></tr>
+    <tr><td><span class="tag t-verde">ACEITO</span></td><td>O escritório conferiu: documento correto e válido.</td></tr>
+    <tr><td><span class="tag t-vermelho">RECUSADO</span></td><td>O escritório recusou e informou o motivo; a empresa precisa enviar novamente.</td></tr>
+    <tr><td><span class="tag t-cinza">NÃO SE APLICA</span></td><td>Não havia o que entregar no mês (ex.: “sem movimento” confirmado pelo escritório).</td></tr>
+  </table>
+  <div class="caixa regra"><span class="rot">Atrasado</span><p>“Atrasado” não é uma situação escolhida por alguém: é o sistema que marca quando o prazo passou e o item ainda está <strong>pendente</strong> ou <strong>recusado</strong>. Nada é sobrescrito: cada envio e cada avaliação ficam guardados no histórico do item.</p></div>
+
+  <h2><span class="n">2.4</span>Caminho de uma admissão (resumo)</h2>
+  <div class="fluxo">
+    <div class="fluxo-cols">
+      <div class="cab cab-emp">Empresa (portal)</div>
+      <div class="cab cab-esc">Escritório (painel)</div>
+
+      <div class="passo"><b>1.</b> Cadastra o funcionário — <span class="tag t-cinza">RASCUNHO</span></div><div class="passo vazio">.</div>
+      <div class="passo"><b>2.</b> Preenche os dados e anexa os documentos</div><div class="passo vazio">.</div>
+      <div class="passo"><b>3.</b> Clica em “Solicitar admissão” →</div>
+      <div class="passo">Entra na fila de admissões — <span class="tag t-azul">EM ANÁLISE</span></div>
+      <div class="passo vazio">.</div>
+      <div class="passo"><b>4.</b> Colaborador assume <span class="pequeno">(registra quem iniciou o atendimento)</span></div>
+      <div class="passo">← <span class="tag t-ambar">DEVOLVIDA</span> com o motivo</div>
+      <div class="passo"><b>5a.</b> Precisa de correção: devolve</div>
+      <div class="passo"><b>6.</b> Corrige e solicita novamente →</div>
+      <div class="passo">Volta para o mesmo colaborador — <span class="tag t-azul">EM ANÁLISE</span></div>
+      <div class="passo vazio">.</div>
+      <div class="passo"><b>5b.</b> Tudo certo: conclui — <span class="tag t-verde">ADMITIDO</span> <span class="pequeno">(registra quem admitiu)</span></div>
+    </div>
+  </div>
+  <p>Os detalhes de cada lado estão nas Partes 4 (colaborador) e 5 (empresa).</p>
+</section>
+
+<!-- ======================= PARTE 3 ======================= -->
+<section class="parte" id="p3">
+  <div class="parte-cab"><div class="num">Parte 3</div><h1>Cenário do administrador</h1><p>O administrador faz tudo o que o colaborador faz (Parte 4) e, além disso, cuida da gestão do escritório dentro do sistema.</p></div>
+
+  <h2><span class="n">3.1</span>Primeiro acesso</h2>
+  <p>O escritório nasce com um administrador <strong>titular</strong>. Como o escritório é criado (o próprio escritório se cadastra pela página pública ou a nossa equipe cadastra) ainda será decidido (D1).</p>
+  <p>Ao entrar pela primeira vez, Ana encontra o catálogo de documentos sugerido pelo sistema (que pode aceitar, editar ou descartar), a configuração de cobrança automática e nenhuma empresa ainda.</p>
+  <div class="caixa info"><span class="rot">Roteiro típico de implantação</span>
+    <ol>
+      <li>Revisar o catálogo de documentos (3.4).</li>
+      <li>Convidar os colaboradores (3.3).</li>
+      <li>Cadastrar as empresas clientes (3.5).</li>
+      <li>Convidar as pessoas de cada empresa para o portal (3.3).</li>
+      <li>Definir a data de corte da cobrança (3.6).</li>
+    </ol>
+  </div>
+
+  <h2><span class="n">3.2</span>Tela inicial: painel do administrador</h2>
+  <h3>Indicador “Empresas”</h3>
+  <p>Total de empresas do escritório, separado em ativas, suspensas e encerradas. Clicando, abre a lista de empresas já filtrada.</p>
+  <h3>Indicador “Empresas devendo documentação”</h3>
+  <p>Quantas empresas ativas têm pelo menos um documento atrasado (prazo vencido e item pendente ou recusado), em qualquer mês ainda aberto.</p>
+  <h3>Lista “Empresas devendo documentação”</h3>
+  <p>Uma linha por empresa, da mais atrasada para a menos atrasada:</p>
+  <table>
+    <tr><th>Empresa</th><th>Atrasados</th><th>Recusados</th><th>Desde</th><th>Maior atraso</th></tr>
+    <tr><td>Padaria Pão Quente</td><td>3 (2 obrigatórios)</td><td>1</td><td>08/2026</td><td>41 dias</td></tr>
+  </table>
+  <ul>
+    <li>Cada linha pode ser expandida para ver <strong>quais</strong> documentos faltam.</li>
+    <li>Clicando na empresa, abre a área de trabalho dela no mês mais antigo com atraso.</li>
+    <li>Filtros: mês, tipo de documento, “somente obrigatórios”.</li>
+  </ul>
+  <div class="caixa regra"><span class="rot">Regra importante</span><p>Documento <strong>enviado e aguardando avaliação não conta como dívida</strong> da empresa. A partir do envio, a pendência é do escritório (conferir).</p></div>
+
+  <h2><span class="n">3.3</span>Equipe e acessos</h2>
+  <h3>Colaboradores e administradores</h3>
+  <ul>
+    <li>Somente o administrador convida, edita, ativa e desativa pessoas da equipe do escritório.</li>
+    <li>Ao convidar, informa nome, e-mail, tipo (administrador ou colaborador) e, para colaboradores, o perfil.</li>
+    <li>Desativar alguém corta o acesso imediatamente, inclusive se a pessoa estiver com o sistema aberto. Mudança de perfil vale na hora.</li>
+    <li>Ninguém é apagado: as pessoas são desativadas, e tudo o que fizeram continua no histórico com o nome delas.</li>
+  </ul>
+  <h3>Administrador titular</h3>
+  <ul>
+    <li>Não pode ser desativado nem virar colaborador. Para isso, precisa antes transferir a titularidade para outro administrador — e só o próprio titular faz essa transferência.</li>
+    <li>Nenhum administrador pode desativar a si mesmo.</li>
+  </ul>
+  <h3>Permissões exclusivas do administrador</h3>
+  <p>Nunca podem ser dadas a um colaborador: gerenciar a equipe, gerenciar perfis e permissões, e alterar dados e configurações do escritório.</p>
+  <h3>Pessoas das empresas (portal)</h3>
+  <ul>
+    <li>O administrador (ou colaborador com permissão) convida as pessoas de cada empresa para o portal, pelo mesmo processo de convite.</li>
+    <li>Uma pessoa pode ser ligada a mais de uma empresa do escritório.</li>
+    <li>Desligar a pessoa de uma empresa tira o acesso a ela na hora. Se for a última empresa da pessoa, ela é desativada.</li>
+  </ul>
+  <h3>Histórico de acessos</h3>
+  <p>Ana pode consultar quem entrou no sistema, quando e de onde.</p>
+
+  <h2><span class="n">3.4</span>Catálogo de documentos</h2>
+  <p>Define o que o escritório exige das empresas todo mês. Para cada item:</p>
+  <table>
+    <tr><th style="width:28%">Configuração</th><th>Descrição</th></tr>
+    <tr><td class="k">Nome</td><td>Ex.: “CND Federal”.</td></tr>
+    <tr><td class="k">Instruções</td><td>Texto que a empresa vê: o que é e onde obter (pode ter links).</td></tr>
+    <tr><td class="k">Tipo</td><td><strong>Documento</strong> (a empresa envia) ou <strong>tarefa</strong> (o escritório executa; a empresa não vê).</td></tr>
+    <tr><td class="k">Formatos</td><td>PDF, imagem, XML, planilha; se aceita mais de um arquivo.</td></tr>
+    <tr><td class="k">Prazo</td><td>Dia do mês seguinte. Ex.: dia 10 → o documento de setembro vence em 10 de outubro.</td></tr>
+    <tr><td class="k">Obrigatório</td><td>Se impede o fechamento do mês.</td></tr>
+    <tr><td class="k">Tem validade</td><td>Se o documento tem data de vencimento (certidões).</td></tr>
+    <tr><td class="k">É certidão</td><td>Habilita registrar se a certidão é negativa ou positiva na avaliação.</td></tr>
+    <tr><td class="k">Aproveitar válido</td><td>Ver quadro abaixo.</td></tr>
+    <tr><td class="k">A quem se aplica</td><td>Todas as empresas, só um regime de impostos, ou empresas escolhidas.</td></tr>
+    <tr><td class="k">Situação</td><td>Ativo ou inativo.</td></tr>
+  </table>
+  <div class="caixa exemplo"><span class="rot">Aproveitar documento ainda válido</span>
+    <p>Uma CND Federal vale 180 dias. Com esta opção ligada, se a certidão aceita no mês passado ainda vale até o fim do mês novo, o item do mês novo já nasce <strong>aceito</strong> (“aceito por validade”), sem a empresa precisar reenviar. Com a opção desligada, a empresa envia todo mês. A escolha é feita por item do catálogo.</p>
+  </div>
+  <h3>Regras do catálogo</h3>
+  <ul>
+    <li>Itens não são apagados, só inativados.</li>
+    <li>Mudanças no catálogo valem para os meses criados <strong>depois</strong> da mudança. Meses já criados não mudam.</li>
+    <li>Documento exigido de uma única empresa também é criado no catálogo (com aplicação “empresas escolhidas”). Assim, todo documento tem um tipo, e é possível ver relatórios por tipo em todas as empresas.</li>
+  </ul>
+  <h3>Ajustes por empresa</h3>
+  <ul>
+    <li>Dispensar um item para aquela empresa, com justificativa (ex.: “empresa sem inscrição estadual — dispensar CND Estadual”).</li>
+    <li>Mudar o prazo ou a obrigatoriedade só para ela.</li>
+    <li>A tela mostra a rotina da empresa com a origem de cada item e os ajustes destacados.</li>
+  </ul>
+
+  <h2><span class="n">3.5</span>Cadastro de empresas clientes</h2>
+  <h3>Dados da empresa</h3>
+  <table>
+    <tr><td class="k">Obrigatórios</td><td>CNPJ (validado e único no escritório), razão social, natureza jurídica, regime de impostos (MEI, Simples Nacional, Lucro Presumido, Lucro Real), data de início do atendimento pelo escritório, situação.</td></tr>
+    <tr><td class="k">Complementares</td><td>Nome fantasia, data de abertura, porte, atividades (CNAE), capital social, situação na Receita, inscrições estadual e municipal, endereço, telefone, e-mail, contato responsável na empresa (nome, CPF, telefone, e-mail).</td></tr>
+  </table>
+  <p>Ainda será decidido se o sistema buscará esses dados automaticamente pelo CNPJ (D12).</p>
+  <h3>Sócios</h3>
+  <p>Nome, CPF ou CNPJ, qualificação (ex.: sócio-administrador), percentual e data de entrada. A soma dos percentuais deve dar 100%.</p>
+  <h3>Regime de impostos com histórico</h3>
+  <p>Mudança de regime não apaga o anterior: o sistema guarda de quando até quando cada regime valeu.</p>
+  <h3>Dados de empregador (só para empresas com funcionários)</h3>
+  <ul>
+    <li>Informações exigidas pelo governo (eSocial) para quem tem empregados: classificação tributária e indicativos (cooperativa, construtora, desoneração da folha).</li>
+    <li><strong>Filiais:</strong> a matriz é criada automaticamente; filiais podem ser incluídas. Cada uma com CNPJ, endereço, atividade principal, alíquota de risco (RAT) e fator previdenciário (FAP).</li>
+    <li>Grau de risco da filial (1 a 4), usado na regra do exame demissional.</li>
+    <li>Sem esses dados, a empresa não consegue iniciar admissões.</li>
+  </ul>
+  <h3>Situações da empresa</h3>
+  <table>
+    <tr><td style="width:22%"><span class="tag t-verde">ATIVA</span></td><td>Funcionamento normal.</td></tr>
+    <tr><td><span class="tag t-ambar">SUSPENSA</span></td><td>Atendimento pausado.</td></tr>
+    <tr><td><span class="tag t-cinza">ENCERRADA</span></td><td>Não gera novos meses nem admite funcionários, mas todo o histórico é mantido.</td></tr>
+  </table>
+  <p>Empresa nunca é apagada. Empresa com funcionários ativos, em admissão ou em desligamento não pode ser encerrada.</p>
+
+  <h2><span class="n">3.6</span>Cobrança automática (configuração)</h2>
+  <ul>
+    <li>Liga ou desliga a cobrança automática para o escritório inteiro.</li>
+    <li>Define a <strong>data de corte</strong> padrão: o dia do mês a partir do qual as empresas com pendências passam a receber a cobrança diária (ex.: dia 5). Aceita de 1 a 28.</li>
+    <li>Define uma data de corte própria para uma empresa, quando necessário (ex.: empresa que só fecha o caixa no dia 8).</li>
+    <li><strong>Suspende</strong> a cobrança de uma empresa por um período (ex.: empresa em negociação), com motivo e data de retorno. Na data, a cobrança volta sozinha.</li>
+    <li>Envia uma cobrança manualmente, a qualquer momento.</li>
+    <li>Consulta o histórico de cobranças de cada empresa: dia, quem recebeu, quais itens foram cobrados.</li>
+  </ul>
+  <p>O funcionamento da cobrança está na Parte 6.</p>
+
+  <h2><span class="n">3.7</span>Relatório de admissões por colaborador</h2>
+  <p>Para cada admissão, o sistema grava de forma <strong>permanente</strong>:</p>
+  <ul>
+    <li>quem <strong>solicitou</strong> (pessoa da empresa ou do escritório) e quando;</li>
+    <li>quem <strong>iniciou o atendimento</strong> (o primeiro colaborador a assumir) e quando;</li>
+    <li>quem <strong>admitiu</strong> (o colaborador que concluiu) e quando.</li>
+  </ul>
+  <div class="caixa regra"><span class="rot">Registro permanente</span><p>Esses registros não podem ser alterados por ninguém, nem pelo administrador. Se a admissão for transferida no meio do caminho, quem iniciou continua o mesmo, e quem concluir fica como quem admitiu.</p></div>
+  <p>O relatório mostra, para cada colaborador, no período escolhido:</p>
+  <table>
+    <tr><th>Colaborador</th><th>Admissões concluídas</th><th>Atendimentos iniciados</th><th>Devoluções feitas</th><th>Tempo médio</th></tr>
+    <tr><td>Bruno</td><td><strong>14</strong></td><td>15</td><td>3</td><td>1,8 dia</td></tr>
+    <tr><td>Daniela</td><td><strong>9</strong></td><td>8</td><td>1</td><td>2,4 dias</td></tr>
+  </table>
+  <p class="pequeno">Exemplo referente a outubro/2026. “Admissões concluídas” é o número principal. O tempo médio é medido da solicitação até a admissão, e de quando o colaborador assumiu até a admissão.</p>
+  <ul>
+    <li>Filtros: período, empresa, colaborador. Padrão: mês atual.</li>
+    <li>Cada linha abre a lista dos funcionários admitidos por aquele colaborador.</li>
+    <li>Colaborador desativado continua aparecendo com seu histórico.</li>
+  </ul>
+
+  <h2><span class="n">3.8</span>Outras ações do administrador</h2>
+  <ul>
+    <li>Transferir uma admissão de um colaborador para outro.</li>
+    <li>Reabrir um mês fechado (com justificativa).</li>
+    <li>Tudo o que o colaborador faz (Parte 4).</li>
+  </ul>
+</section>
+
+<!-- ======================= PARTE 4 ======================= -->
+<section class="parte" id="p4">
+  <div class="parte-cab"><div class="num">Parte 4</div><h1>Cenário do colaborador</h1><p>O que o colaborador pode acessar depende do seu perfil. A sugestão para o perfil inicial é: empresas, funcionários, documentos e notas, sem acesso a dados financeiros do escritório nem a dados sensíveis dos funcionários (D4).</p></div>
+
+  <h2><span class="n">4.1</span>Tela inicial</h2>
+  <p>Nesta fase, o colaborador não tem painel de números. Ao entrar, Bruno vê uma tela de boas-vindas e o menu. Um painel do colaborador, com as filas dele, está previsto para depois.</p>
+
+  <h2><span class="n">4.2</span>Empresas e área de trabalho</h2>
+  <ul>
+    <li>Consulta e cadastra empresas (conforme permissão).</li>
+    <li>Abre a área de trabalho de uma empresa e vê o <strong>painel do mês</strong>:
+      <ul>
+        <li>progresso (itens aceitos ou concluídos / total);</li>
+        <li>itens pendentes, atrasados, recusados e aguardando avaliação, com prazo;</li>
+        <li>alertas: certidões positivas, documentos vencidos ou a vencer;</li>
+        <li>notas fiscais do mês;</li>
+        <li>admissões e desligamentos do mês, com seus prazos.</li>
+      </ul>
+    </li>
+    <li>Inclui um item avulso no mês (de um tipo do catálogo) ou remove um item gerado (com justificativa).</li>
+    <li>Executa e conclui as tarefas internas do mês.</li>
+    <li>Fecha o mês, quando tudo estiver resolvido (conforme permissão).</li>
+  </ul>
+
+  <h2><span class="n">4.3</span>Avaliar documentos enviados pelas empresas</h2>
+  <h3>Fila de avaliação</h3>
+  <p>Uma tela reúne todos os documentos enviados pelas empresas que aguardam conferência, do mais antigo para o mais novo, com filtros por empresa, tipo de documento e mês. Dá para avaliar direto da fila.</p>
+  <h3>Botão “Avaliar”</h3>
+  <table>
+    <tr><th style="width:18%">Decisão</th><th>O que acontece</th></tr>
+    <tr><td><span class="tag t-verde">ACEITAR</span></td><td>
+      O documento é o solicitado, está legível, pertence à empresa e é válido. O item vira <strong>aceito</strong>.
+      <ul style="margin-top:4pt">
+        <li>Se o documento tem validade, o colaborador confirma ou corrige a data. <strong>Documento já vencido não pode ser aceito.</strong></li>
+        <li>Se é certidão, registra o resultado (quadro abaixo).</li>
+      </ul>
+    </td></tr>
+    <tr><td><span class="tag t-vermelho">RECUSAR</span></td><td>
+      Escolhe o motivo — documento ilegível; diferente do solicitado; de outra empresa; vencido; incompleto; outro — e escreve um complemento. O item vira <strong>recusado</strong> e a empresa recebe um aviso com o motivo.
+    </td></tr>
+  </table>
+  <table>
+    <tr><th colspan="2">Resultado da certidão (registrado ao aceitar)</th></tr>
+    <tr><td style="width:40%"><strong>Negativa</strong></td><td>Empresa sem débitos.</td></tr>
+    <tr><td><strong>Positiva com efeitos de negativa</strong></td><td>Débitos parcelados ou suspensos.</td></tr>
+    <tr><td><strong>Positiva</strong></td><td>Empresa com débitos. É aceita como documento, mas gera um <strong>alerta</strong> para o escritório, pois indica um problema da empresa no órgão.</td></tr>
+  </table>
+  <h3>“Sem movimento”</h3>
+  <p>Quando a empresa informa que não houve movimento, o colaborador confirma (o item vira <strong>não se aplica</strong>) ou recusa (o item vira <strong>recusado</strong>). A empresa vê o resultado e o motivo, mas não o nome de quem avaliou; o escritório vê tudo.</p>
+
+  <h2><span class="n">4.4</span>Admitir funcionários (lado do escritório)</h2>
+  <div class="caixa exemplo"><span class="rot">Exemplo</span><p>Carla, da Padaria Pão Quente, solicitou a admissão do João, com início previsto para 03/11/2026.</p></div>
+
+  <h3>Passo 1 — Fila de admissões</h3>
+  <p>A admissão do João aparece na fila como <span class="tag t-azul">EM ANÁLISE</span>. A fila mostra empresa, funcionário, cargo, data de início prevista, data da solicitação, responsável (se houver) e prazo legal.</p>
+  <ul>
+    <li>Ordem: data de início mais próxima primeiro.</li>
+    <li>Destaque para as que vencem o prazo legal em até 1 dia útil ou já venceram. Por lei, o registro no eSocial deve ser feito <strong>até o dia anterior ao início do trabalho</strong>.</li>
+    <li>Filtros: empresa, responsável, “sem responsável”, período.</li>
+  </ul>
+  <h3>Passo 2 — Assumir</h3>
+  <p>Bruno clica em “Assumir”. A partir daí, Bruno é o <strong>responsável</strong>, fica registrado que ele <strong>iniciou o atendimento</strong>, e outro colaborador não pode assumir, a não ser por transferência (feita pelo administrador ou pelo próprio Bruno).</p>
+  <h3>Passo 3 — Analisar</h3>
+  <ul>
+    <li>Bruno confere os dados e <strong>cada documento</strong>, marcando cada um como aceito ou recusado (com motivo).</li>
+    <li>Pequenos erros (ex.: CEP digitado errado) ele mesmo corrige. A correção fica registrada (antes, depois, quem, quando) e a empresa consegue ver.</li>
+  </ul>
+  <h3>Passo 4a — Devolver (quando necessário)</h3>
+  <p>Se houver documento recusado ou dado que só a empresa pode resolver (ex.: comprovante de residência ilegível), Bruno <strong>devolve</strong> com o motivo. A admissão vira <span class="tag t-ambar">DEVOLVIDA</span>, Carla é avisada, corrige e solicita de novo. A admissão volta para a fila já com Bruno como responsável.</p>
+  <h3>Passo 4b — Concluir</h3>
+  <p>Com tudo certo, Bruno completa os dados técnicos que cabem ao escritório:</p>
+  <ul>
+    <li>matrícula do funcionário;</li>
+    <li>categoria do trabalhador, código do cargo (CBO), natureza da atividade, regime de jornada, sindicato e demais dados exigidos pelo eSocial;</li>
+    <li>data de admissão efetiva;</li>
+    <li>número do recibo do eSocial (opcional).</li>
+  </ul>
+  <p>Ao clicar em “Concluir”, a admissão vira <span class="tag t-verde">ADMITIDO</span>, João passa a constar como funcionário ativo da padaria e fica registrado que <strong>Bruno admitiu</strong>. Carla é avisada.</p>
+  <h3>Cancelar</h3>
+  <p>Se o candidato desistir, o escritório cancela a admissão com justificativa. A empresa pode pedir o cancelamento, mas quem executa é o escritório.</p>
+  <h3>Linha do tempo</h3>
+  <p>Cada etapa (solicitada, assumida, devolvida, concluída, cancelada) aparece numa linha do tempo, com data, hora, pessoa e motivo, visível para o escritório e para a empresa.</p>
+
+  <h2><span class="n">4.5</span>Regras legais que o sistema verifica na admissão</h2>
+  <table>
+    <tr><td class="k">Idade mínima</td><td>16 anos na data de admissão; 14 anos para aprendiz.</td></tr>
+    <tr><td class="k">Contrato de experiência</td><td>Máximo de 90 dias no total, em até 2 períodos (uma prorrogação) — ex.: 45 + 45 dias. O sistema calcula as datas de término e avisa antes de cada vencimento. A prorrogação precisa ser registrada até o primeiro dia útil seguinte.</td></tr>
+    <tr><td class="k">Prazo determinado</td><td>Data de término obrigatória; máximo de 2 anos.</td></tr>
+    <tr><td class="k">Salário</td><td>Alerta se for menor que o salário mínimo nacional, proporcional à jornada.</td></tr>
+    <tr><td class="k">Exame admissional (ASO)</td><td>A data do exame deve ser igual ou anterior à data de admissão. O sistema guarda tipo, data, resultado (apto ou inapto), médico e CRM.</td></tr>
+    <tr><td class="k">Prazos do governo</td><td>Até o <strong>dia anterior ao início</strong>: CPF, nascimento, data de admissão, matrícula, categoria, cargo, salário, tipo de contrato. Até o <strong>dia 15 do mês seguinte</strong>: os demais dados. O sistema mostra esses prazos e avisa quando estão perto.</td></tr>
+    <tr><td class="k">Recontratação</td><td>Se a pessoa foi dispensada sem justa causa há menos de 90 dias, o sistema alerta (a fiscalização pode entender como fraude ao seguro-desemprego/FGTS). O alerta não impede a admissão.</td></tr>
+    <tr><td class="k">Funcionário × contrato</td><td>Cada pessoa tem um cadastro na empresa; cada contratação gera um novo <strong>contrato</strong>. Numa recontratação, o histórico dos contratos anteriores é mantido. Uma pessoa só pode ter um contrato em andamento por vez na mesma empresa.</td></tr>
+  </table>
+
+  <h2><span class="n">4.6</span>Desligar funcionários</h2>
+  <p>Nesta fase, o desligamento é registrado pelo escritório. Se a empresa também vai poder solicitar o desligamento pelo portal ainda será decidido (D28).</p>
+  <h3>Dados do desligamento</h3>
+  <p>Motivo, data de desligamento (último dia do contrato), tipo de aviso prévio (trabalhado, indenizado, dispensado ou não se aplica), data do aviso, pensão alimentícia (se houver), número de processo trabalhista (se for por decisão judicial), valor líquido da rescisão e observações.</p>
+  <h3>Motivos disponíveis (padrão do governo — eSocial)</h3>
+  <table>
+    <tr><td>Justa causa, por iniciativa do empregador</td><td>Sem justa causa, por iniciativa do empregador</td></tr>
+    <tr><td>Rescisão antecipada do contrato a termo, pelo empregador</td><td>Rescisão antecipada do contrato a termo, pelo empregado</td></tr>
+    <tr><td>Culpa recíproca</td><td>Término do contrato a termo (inclui fim da experiência)</td></tr>
+    <tr><td>Pedido de demissão</td><td>Falecimento do empregado</td></tr>
+    <tr><td>Encerramento da empresa, de filial ou de atividade</td><td>Aprendiz: desempenho insuficiente ou inadaptação</td></tr>
+    <tr><td>Rescisão indireta</td><td>Força maior</td></tr>
+    <tr><td>Acordo entre as partes (reforma trabalhista)</td><td></td></tr>
+  </table>
+  <h3>Aviso prévio calculado pelo sistema</h3>
+  <p>Na dispensa sem justa causa: <strong>30 dias + 3 dias por ano completo trabalhado</strong>, até 90 dias. Nos demais casos com aviso: 30 dias. O valor pode ser ajustado manualmente, com justificativa.</p>
+  <div class="caixa exemplo"><span class="rot">Exemplo</span><p>Funcionário com 4 anos completos dispensado sem justa causa: 30 + 12 = <strong>42 dias</strong> de aviso prévio.</p></div>
+  <h3>Prazos legais (com aviso antes de vencer)</h3>
+  <ul>
+    <li>Pagamento da rescisão: até <strong>10 dias corridos</strong> após o término do contrato.</li>
+    <li>Envio do desligamento ao eSocial: até o <strong>10º dia</strong> seguinte.</li>
+  </ul>
+  <h3>Exame demissional</h3>
+  <p>Obrigatório, exceto se o último exame ocupacional foi feito há menos de <strong>135 dias</strong> (empresas de grau de risco 1 e 2) ou <strong>90 dias</strong> (grau 3 e 4). Nesse caso, marca-se a dispensa e anexa-se o último exame.</p>
+  <h3>Documentos exigidos para concluir</h3>
+  <table>
+    <tr><td class="k">Sempre</td><td>Termo de rescisão (TRCT) assinado, comprovante de pagamento, exame demissional (ou dispensa), comprovante do FGTS rescisório.</td></tr>
+    <tr><td class="k">Conforme o motivo</td><td>Pedido de demissão assinado, aviso prévio assinado, termo de acordo, guia de seguro-desemprego, documentos da justa causa, certidão de óbito.</td></tr>
+  </table>
+  <h3>Cancelamento e cálculo</h3>
+  <ul>
+    <li>Enquanto o desligamento não for concluído, pode ser cancelado (ex.: o empregador reconsiderou o aviso), com justificativa.</li>
+    <li>Nesta fase o sistema <strong>não calcula</strong> os valores da rescisão: registra o valor e guarda o TRCT gerado no sistema de folha do escritório.</li>
+  </ul>
+
+  <h2><span class="n">4.7</span>Notas fiscais (lado do escritório)</h2>
+  <ul>
+    <li>Consulta as notas de cada empresa por mês, separadas em entradas e saídas, com totais (detalhes em 5.3).</li>
+    <li>Pode enviar XMLs em nome da empresa.</li>
+    <li>Pode <strong>mover</strong> uma nota para outro mês, com justificativa (ex.: nota emitida em setembro, mas que chegou e foi lançada em outubro). A mudança fica no histórico. A empresa não pode mover notas.</li>
+    <li>Pode consultar notas de todas as empresas em um mês.</li>
+  </ul>
+</section>
+
+<!-- ======================= PARTE 5 ======================= -->
+<section class="parte" id="p5">
+  <div class="parte-cab"><div class="num">Parte 5</div><h1>Cenário da empresa</h1><p>Tudo o que a empresa cliente faz acontece no portal da empresa.</p></div>
+
+  <h2><span class="n">5.1</span>Primeiro acesso</h2>
+  <ol>
+    <li>Carla recebe um e-mail de convite da Contabilidade Silva.</li>
+    <li>Clica no link, cria sua senha e entra direto no portal da Padaria Pão Quente.</li>
+    <li>Se Carla estiver ligada a duas empresas, escolhe em qual quer trabalhar (e pode trocar a qualquer momento).</li>
+  </ol>
+  <div class="caixa pendente"><span class="rot">Em definição (D3)</span><p>Conteúdo da tela inicial do portal. Sugestão: resumo do mês com o que falta enviar, documentos recusados e admissões em andamento.</p></div>
+
+  <h2><span class="n">5.2</span>Documentos do mês</h2>
+  <p>Carla vê a lista de documentos que a padaria deve entregar referente ao mês, com nome, <strong>instruções</strong> (o que é e onde obter, escritas pelo escritório), prazo, situação e, se recusado, o <strong>motivo</strong>.</p>
+  <table>
+    <tr><th>Ela pode</th><th>Ela não pode</th></tr>
+    <tr><td>
+      <ul>
+        <li><strong>Enviar</strong> o arquivo de cada documento. Se o documento tem validade (ex.: certidão), informa a data de validade. O item vira <em>em avaliação</em>.</li>
+        <li>Informar <strong>“sem movimento”</strong>, com observação, quando não houver o que entregar. O escritório confirma ou recusa.</li>
+        <li><strong>Reenviar</strong> um documento recusado.</li>
+      </ul>
+    </td><td>
+      <ul>
+        <li>Enviar de novo um documento em avaliação ou já aceito.</li>
+        <li>Enviar documentos de um mês já fechado.</li>
+        <li>Ver tarefas internas do escritório.</li>
+      </ul>
+    </td></tr>
+  </table>
+  <p>Ela recebe por e-mail a cobrança diária (Parte 6) e o aviso de cada documento recusado.</p>
+
+  <h2><span class="n">5.3</span>Notas fiscais</h2>
+  <h3>Envio</h3>
+  <ul>
+    <li>Área “Notas fiscais” no portal. Carla envia os arquivos <strong>XML</strong> das notas (o arquivo oficial da nota eletrônica) — vários de uma vez, inclusive dentro de um arquivo compactado (.zip).</li>
+    <li>Ela <strong>não informa o mês</strong>: o sistema descobre sozinho.</li>
+    <li>Tipos aceitos nesta fase: NF-e (nota fiscal eletrônica), NFC-e (nota de consumidor) e os arquivos de cancelamento dessas notas.</li>
+  </ul>
+  <h3>O que o sistema faz com cada nota</h3>
+  <ol>
+    <li><strong>Lê o arquivo</strong> e extrai: chave de acesso, número, série, data de emissão, emitente, destinatário, valor total, impostos principais e autorização da SEFAZ.</li>
+    <li><strong>Verifica se a nota é da padaria:</strong> o CNPJ da padaria (matriz ou filial) precisa ser o emitente ou o destinatário.</li>
+    <li><strong>Classifica</strong> a nota (tabela abaixo).</li>
+    <li><strong>Coloca a nota no mês</strong> da data de emissão, considerando o horário de Brasília — uma nota emitida às 23h30 de 30/09 é de setembro.</li>
+    <li><strong>Liga a nota ao item</strong> “Notas fiscais de saída/entrada” do mês, que vai para <em>em avaliação</em>.</li>
+  </ol>
+  <table>
+    <tr><th style="width:32%">Classificação</th><th>Quando</th></tr>
+    <tr><td class="k">Saída</td><td>A padaria emitiu (ex.: venda).</td></tr>
+    <tr><td class="k">Entrada de terceiros</td><td>A padaria recebeu (ex.: compra de farinha).</td></tr>
+    <tr><td class="k">Entrada de emissão própria</td><td>A padaria emitiu uma nota de entrada (ex.: devolução recebida).</td></tr>
+  </table>
+  <p>Um mesmo envio pode ter notas de meses diferentes: cada uma vai para o seu mês.</p>
+  <h3>Resultado do envio</h3>
+  <table>
+    <tr><td style="width:22%"><span class="tag t-verde">IMPORTADAS</span></td><td>Com o mês de cada uma.</td></tr>
+    <tr><td><span class="tag t-cinza">REPETIDAS</span></td><td>Já enviadas antes — não são duplicadas.</td></tr>
+    <tr><td><span class="tag t-vermelho">RECUSADAS</span></td><td>Com o motivo: arquivo inválido ou de tipo não aceito; nota não autorizada pela SEFAZ; nota que não é da padaria; mês da nota já fechado (“fale com o escritório”).</td></tr>
+  </table>
+  <h3>Cancelamento</h3>
+  <p>Se Carla enviar o arquivo de cancelamento de uma nota, a nota passa a <strong>cancelada</strong>: continua no mês, sinalizada, mas sai dos totais. Se o cancelamento chegar antes da nota, o sistema guarda e aplica quando a nota chegar.</p>
+  <h3>Consulta</h3>
+  <ul>
+    <li>Por mês, separada em saídas e entradas, com quantidade e valor total (sem contar canceladas).</li>
+    <li>Filtros: período, entrada/saída, situação, emitente/destinatário, número, chave de acesso, código de operação (CFOP), valor, tipo de nota.</li>
+    <li>Baixar o XML de uma nota ou todos os XMLs do resultado num .zip (ex.: “todas as notas de saída de setembro”).</li>
+  </ul>
+  <div class="caixa regra"><span class="rot">Guarda</span><p>O arquivo original é guardado exatamente como foi recebido e não pode ser alterado nem apagado — ele tem validade jurídica.</p></div>
+
+  <h2><span class="n">5.4</span>Funcionários: pedir uma admissão</h2>
+  <h3>Passo 1 — Cadastrar (rascunho)</h3>
+  <p>Carla clica em “Nova admissão” e informa, no mínimo, nome, CPF e data de início prevista do João. A admissão nasce como <span class="tag t-cinza">RASCUNHO</span>. O escritório ainda não a vê.</p>
+  <h3>Passo 2 — Preencher</h3>
+  <p>Carla pode salvar e voltar depois quantas vezes quiser.</p>
+  <table>
+    <tr><td class="k">Dados pessoais</td><td>Nome completo, CPF, data de nascimento, sexo, raça/cor, estado civil, escolaridade, país de nascimento, nacionalidade, endereço completo, telefone, e-mail, RG ou CNH, PIS (opcional), nome social (se houver).</td></tr>
+    <tr><td class="k">Dependentes</td><td>Nome, data de nascimento, parentesco; se é dependente para imposto de renda (então o CPF é obrigatório) e/ou para salário-família.</td></tr>
+    <tr><td class="k">Dados bancários</td><td>Banco, agência e conta, ou chave Pix.</td></tr>
+    <tr><td class="k">Situações especiais</td><td>Pessoa com deficiência e estrangeiro, quando for o caso.</td></tr>
+    <tr><td class="k">Contrato</td><td>Data de início, cargo, salário, tipo de contrato (indeterminado, experiência com os períodos, ou prazo determinado), jornada e horário, local de trabalho (matriz ou filial).</td></tr>
+  </table>
+  <p><strong>Documentos</strong> (cada um anexado no seu lugar):</p>
+  <table>
+    <tr><td class="k">Sempre</td><td>Documento com foto, comprovante de residência, exame admissional (ASO), contrato de trabalho assinado.</td></tr>
+    <tr><td class="k">Conforme o caso</td><td>Certidão de casamento; certidão de nascimento e CPF dos dependentes; cartão de vacinação de filhos até 6 anos e comprovante escolar de filhos de 7 a 14 anos (salário-família); certificado de reservista (homens de 18 a 45 anos).</td></tr>
+    <tr><td class="k">Opcionais</td><td>Comprovante de escolaridade, título de eleitor, foto.</td></tr>
+  </table>
+  <p>O sistema mostra o tempo todo a <strong>lista do que falta</strong>. Enquanto está em rascunho, Carla pode desistir e cancelar.</p>
+  <h3>Passo 3 — Solicitar admissão</h3>
+  <ul>
+    <li>O botão “Solicitar admissão” só é liberado quando <strong>não falta nada</strong>.</li>
+    <li>Ao clicar, o sistema confere novamente as regras (idade, datas da experiência, data do exame, salário).</li>
+    <li>Se a data de início estiver próxima demais, o sistema alerta que pode não haver tempo para o registro legal (a antecedência mínima ainda será decidida — D27).</li>
+    <li>A admissão vira <span class="tag t-azul">EM ANÁLISE</span> e entra na fila do escritório.</li>
+    <li>A partir daqui Carla <strong>não pode mais alterar nada</strong>; só acompanha. Se precisar corrigir algo, pede ao escritório.</li>
+  </ul>
+  <h3>Passo 4 — Acompanhar</h3>
+  <p>Carla vê a lista de admissões da padaria com a situação de cada uma (rascunho, em análise, devolvida, admitido, cancelada) e a linha do tempo. Recebe e-mail quando a admissão é:</p>
+  <ul>
+    <li><strong>devolvida</strong> — vê o motivo e os documentos recusados, corrige e solicita de novo;</li>
+    <li><strong>cancelada</strong>;</li>
+    <li><strong>concluída</strong> (admitido).</li>
+  </ul>
+
+  <h2><span class="n">5.5</span>Consultas da empresa</h2>
+  <ul>
+    <li>Dados cadastrais da empresa.</li>
+    <li>Funcionários e seus documentos, inclusive salário e dados bancários (a empresa é a empregadora e é ela quem fornece esses dados).</li>
+    <li>Documentos que o escritório disponibilizar para a empresa (ex.: guias, relatórios). Documentos internos do escritório nunca aparecem.</li>
+  </ul>
+
+  <h2><span class="n">5.6</span>O que a empresa nunca vê</h2>
+  <ul>
+    <li>Outras empresas do escritório.</li>
+    <li>Tarefas e anotações internas do escritório.</li>
+    <li>Configurações do escritório e dados da equipe.</li>
+    <li>Quem do escritório avaliou cada documento (vê apenas o resultado e o motivo).</li>
+  </ul>
+</section>
+
+<!-- ======================= PARTE 6 ======================= -->
+<section class="parte" id="p6">
+  <div class="parte-cab"><div class="num">Parte 6</div><h1>O que o sistema faz sozinho</h1></div>
+
+  <h2><span class="n">6.1</span>Todo dia 1º — criação do mês</h2>
+  <p>Para cada empresa ativa, o sistema cria o novo mês com a lista de documentos e tarefas da sua rotina. Se a opção “aproveitar documento válido” estiver ligada e houver certidão ainda válida, o item já nasce aceito. Meses antigos (anteriores ao uso do sistema) são criados na primeira vez em que alguém os abre.</p>
+
+  <h2><span class="n">6.2</span>Todo dia, às 8h — cobrança de documentação</h2>
+  <h3>Qual mês é cobrado</h3>
+  <p>O <strong>mês anterior</strong>. Em 15/10, cobram-se os documentos de setembro, porque os documentos de um mês são entregues no mês seguinte. Atrasos de meses mais antigos ainda abertos aparecem num bloco separado.</p>
+  <h3>Data de corte</h3>
+  <p>É o dia a partir do qual a cobrança começa.</p>
+  <div class="caixa exemplo"><span class="rot">Exemplo — data de corte no dia 5 e prazo dos documentos no dia 10</span>
+    <div class="linha-tempo">
+      <div><b>01/10 a 04/10</b> Nenhuma cobrança.</div>
+      <div><b>05/10</b> 1ª cobrança: “faltam 3 documentos, prazo dia 10”.</div>
+      <div><b>06/10 a 10/10</b> Cobrança diária enquanto houver pendência.</div>
+      <div><b>11/10 em diante</b> Cobrança diária, agora indicando “atrasado há N dias”.</div>
+      <div><b>Envio completo</b> No dia em que a empresa envia tudo, a cobrança para.</div>
+    </div>
+  </div>
+  <h3>O que é cobrado</h3>
+  <p>Documentos <strong>pendentes</strong> e <strong>recusados</strong>. Não são cobrados os que estão em avaliação, aceitos ou “não se aplica”.</p>
+  <h3>O e-mail</h3>
+  <p>Um único e-mail por empresa por dia, com o nome da empresa e o mês; cada documento com prazo e situação (“pendente”, “atrasado há 5 dias”, “recusado: documento ilegível”); as instruções de cada documento; e um link direto para a tela de envio no portal.</p>
+  <h3>Quem recebe</h3>
+  <p>Todas as pessoas da empresa com acesso ativo ao portal. Se o escritório poderá escolher destinatários específicos ainda será decidido (D19).</p>
+  <h3>Garantias</h3>
+  <ul>
+    <li>Empresa sem pendências não recebe e-mail.</li>
+    <li>Nunca são enviadas duas cobranças automáticas no mesmo dia para a mesma empresa.</li>
+    <li>Empresa sem nenhuma pessoa cadastrada no portal não recebe cobrança, e o escritório é alertado (“cobrança não enviada: empresa sem usuário”).</li>
+    <li>Empresas com cobrança suspensa não recebem até a data de retorno.</li>
+    <li>Todo envio fica no histórico da empresa.</li>
+  </ul>
+
+  <h2><span class="n">6.3</span>Avisos automáticos</h2>
+  <table>
+    <tr><th style="width:50%">Para o escritório</th><th>Para a empresa</th></tr>
+    <tr><td>
+      <ul>
+        <li>Nova admissão solicitada (ou solicitada novamente).</li>
+        <li>Certidão positiva aceita.</li>
+        <li>Documentos aceitos vencidos ou perto de vencer.</li>
+        <li>Prazos legais de admissão, experiência e desligamento perto de vencer.</li>
+        <li>Empresa sem pessoa para receber cobrança.</li>
+        <li>Nota fiscal recusada por mês fechado.</li>
+      </ul>
+    </td><td>
+      <ul>
+        <li>Cobrança diária de documentação.</li>
+        <li>Documento recusado.</li>
+        <li>Admissão devolvida, cancelada ou concluída.</li>
+      </ul>
+    </td></tr>
+  </table>
+</section>
+
+<!-- ======================= PARTE 7 ======================= -->
+<section class="parte" id="p7">
+  <div class="parte-cab"><div class="num">Parte 7</div><h1>Segurança, privacidade e regras legais</h1></div>
+
+  <table>
+    <tr><td class="k">Isolamento</td><td>Cada escritório vê apenas os seus dados. Cada pessoa de empresa vê apenas a(s) sua(s) empresa(s).</td></tr>
+    <tr><td class="k">Nada é apagado</td><td>Empresas, funcionários, contratos, documentos e notas nunca são apagados de verdade: são desativados, encerrados ou arquivados. A legislação exige a guarda de documentos fiscais e trabalhistas por anos (mínimo de 5 anos para documentos fiscais).</td></tr>
+    <tr><td class="k">Histórico de alterações</td><td>Toda criação ou alteração importante fica registrada: quem fez, quando, de onde, o valor anterior e o novo.</td></tr>
+    <tr><td class="k">Dados sensíveis (LGPD)</td><td>Salário, dados bancários, raça/cor, exames médicos e documentos de justa causa só são vistos por quem tem permissão específica, e cada visualização fica registrada. Na LGPD, o escritório é o “controlador” dos dados e nós (a plataforma) somos o “operador”.</td></tr>
+    <tr><td class="k">Senhas e acesso</td><td>Ver 2.1. Senhas de certificados digitais e de portais do governo (quando existirem no sistema) são guardadas criptografadas e nunca exibidas.</td></tr>
+  </table>
+  <div class="caixa regra"><span class="rot">Regras legais</span><p>As regras trabalhistas e fiscais deste documento (prazos, idade mínima, aviso prévio, exame demissional, motivos de desligamento) foram levantadas com base na CLT, no eSocial, na Portaria MTP 671/2021 e na NR-7. Antes do desenvolvimento de cada módulo, é recomendável que um contador ou advogado trabalhista revise esses pontos.</p></div>
+
+  <!-- ======================= PARTE 8 ======================= -->
+  <div id="p8" style="margin-top:22pt"></div>
+  <div class="parte-cab"><div class="num">Parte 8</div><h1>Fora da primeira fase</h1><p>Previsto para fases seguintes (algumas regras já estão rascunhadas).</p></div>
+  <ul>
+    <li>Obrigações fiscais e calendário de vencimentos (DAS, DCTFWeb, SPED…).</li>
+    <li>Honorários do escritório: contratos, reajustes, boletos e Pix.</li>
+    <li>Certificados digitais das empresas, com alerta de vencimento.</li>
+    <li>Tarefas avulsas da equipe.</li>
+    <li>Painel do colaborador.</li>
+    <li>Novos perfis de colaborador (Fiscal, DP, Financeiro…) e de usuário da empresa (sócio, RH, financeiro…).</li>
+    <li>Férias, afastamentos e folha de pagamento.</li>
+    <li>Cálculo da rescisão.</li>
+    <li>Envio direto ao eSocial pelo sistema.</li>
+    <li>Aplicativos de celular.</li>
+  </ul>
+</section>
+
+<!-- ======================= PARTE 9 ======================= -->
+<section class="parte" id="p9">
+  <div class="parte-cab"><div class="num">Parte 9</div><h1>Decisões pendentes</h1><p>Cada item traz a pergunta, por que ela importa e uma sugestão. Os itens com borda vermelha influenciam diretamente o início do desenvolvimento ou a forma de vender o produto.</p></div>
+
+  <div class="grupo-dec">Produto e comercial</div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D1</span>Como um escritório entra no sistema?</span><span class="ref">ref. RN-102</span></div>
+    <p>Opções: (a) o escritório se cadastra sozinho pela página pública, com ou sem teste grátis; (b) nossa equipe cadastra após a venda. Define a página pública, o processo de venda e a cobrança.</p>
+    <p class="sug"><b>Sugestão:</b> começar com (b) e abrir o autocadastro depois.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D2</span>Conteúdo da página pública</span><span class="ref">ref. RN-003</span></div>
+    <p>Textos, planos, preços, contato, botão de teste grátis. Depende de D1.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D3</span>Tela inicial do portal da empresa</span><span class="ref">ref. RN-1500</span></div>
+    <p class="sug"><b>Sugestão:</b> resumo do mês (o que falta, recusados, prazos) e admissões em andamento.</p></div>
+
+  <div class="grupo-dec">Equipe e permissões</div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D4</span>O que o perfil “Colaborador” pode fazer?</span><span class="ref">ref. RN-224</span></div>
+    <p class="sug"><b>Sugestão:</b> empresas, funcionários, documentos, notas e admissões; sem acesso a dados financeiros do escritório nem a dados sensíveis dos funcionários.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D5</span>Perfis fixos ou personalizáveis?</span><span class="ref">ref. RN-225</span></div>
+    <p>(a) nós definimos os perfis; (b) cada escritório cria os seus.</p>
+    <p class="sug"><b>Sugestão:</b> (a) na primeira fase.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D6</span>Colaborador vê todas as empresas ou só a sua carteira?</span><span class="ref">ref. RN-226</span></div>
+    <p>Escritórios maiores costumam dividir empresas entre colaboradores.</p>
+    <p class="sug"><b>Sugestão:</b> todas na primeira fase; carteira como evolução.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D7</span>Mais de um administrador por escritório?</span><span class="ref">ref. RN-212</span></div>
+    <p class="sug"><b>Sugestão:</b> sim (sócios do escritório), mantendo um único titular.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D8</span>CPF e telefone obrigatórios para usuários?</span><span class="ref">ref. RN-203</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D9</span>Login em duas etapas (código por app/SMS)?</span><span class="ref">ref. RN-307</span></div>
+    <p>Opções: opcional; obrigatório para administradores; obrigatório para todos.</p>
+    <p class="sug"><b>Sugestão:</b> obrigatório para administradores.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D10</span>A pessoa da empresa pode convidar colegas da própria empresa?</span><span class="ref">ref. RN-242</span></div>
+    <p class="sug"><b>Sugestão:</b> não na primeira fase.</p></div>
+
+  <div class="grupo-dec">Empresas e mês de trabalho</div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D11</span>Ao abrir uma empresa, qual mês aparece?</span><span class="ref">ref. RN-600</span></div>
+    <p>(a) o mês atual; (b) o mês anterior — em outubro, o normal é trabalhar setembro.</p>
+    <p class="sug"><b>Sugestão:</b> (b).</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D12</span>Buscar dados da empresa automaticamente pelo CNPJ?</span><span class="ref">ref. RN-406</span></div>
+    <p class="sug"><b>Sugestão:</b> sim; economiza digitação no cadastro.</p></div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D13</span>Itens do catálogo sugerido</span><span class="ref">ref. RN-613</span></div>
+    <p class="sug"><b>Sugestão:</b> notas de saída, notas de entrada, extratos bancários, comprovantes de despesas, CND Federal, CRF/FGTS, CNDT, CND Estadual, CND Municipal.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D14</span>Itens trimestrais ou anuais no catálogo?</span><span class="ref">ref. RN-614</span></div>
+    <p>Nesta fase, todos são mensais.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D15</span>Tela com todas as empresas em um mês na primeira versão?</span><span class="ref">ref. RN-606</span></div>
+    <p>Ex.: “quem ainda não entregou as notas de setembro”. O painel do administrador já cobre parte disso.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D16</span>Com quanta antecedência avisar sobre certidões vencendo?</span><span class="ref">ref. RN-626</span></div>
+    <p class="sug"><b>Sugestão:</b> 15 dias.</p></div>
+
+  <div class="grupo-dec">Cobrança automática</div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D17</span>Data de corte padrão</span><span class="ref">ref. RN-1311</span></div>
+    <p class="sug"><b>Sugestão:</b> dia 5.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D18</span>Cobrança só em dias úteis ou todos os dias? O escritório escolhe o horário?</span><span class="ref">ref. RN-1312</span></div>
+    <p class="sug"><b>Sugestão:</b> só dias úteis, com horário fixo às 8h na primeira fase.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D19</span>Quem da empresa recebe a cobrança?</span><span class="ref">ref. RN-1316</span></div>
+    <p>(a) todas as pessoas com acesso; (b) o escritório escolhe; (c) incluir o contato responsável mesmo sem acesso ao portal.</p>
+    <p class="sug"><b>Sugestão:</b> (a) agora, (b) depois.</p></div>
+
+  <div class="grupo-dec">Notas fiscais</div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D20</span>Nota de compra entra no mês da emissão ou da chegada da mercadoria?</span><span class="ref">ref. RN-720</span></div>
+    <p>Na escrituração fiscal costuma valer a chegada, mas essa data nem sempre está no arquivo. Hoje: emissão, e o escritório move a nota quando necessário.</p></div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D21</span>Incluir NFS-e (notas de serviço) e CT-e (transporte)?</span><span class="ref">ref. RN-704</span></div>
+    <p>Para empresas de serviço, a NFS-e é a principal nota.</p>
+    <p class="sug"><b>Sugestão:</b> NFS-e no padrão nacional logo após a primeira entrega.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D22</span>Guardar os itens de cada nota (produtos, NCM, impostos)?</span><span class="ref">ref. RN-711</span></div>
+    <p>Necessário se o sistema for apurar impostos no futuro.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D23</span>Gerar o DANFE (PDF da nota) a partir do XML?</span><span class="ref">ref. RN-743</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D24</span>Validar assinatura digital / consultar a SEFAZ?</span><span class="ref">ref. RN-715</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D25</span>Notas anteriores ao início do atendimento: aceitar com alerta ou bloquear?</span><span class="ref">ref. RN-723</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D26</span>Limites de envio (quantidade de arquivos e tamanho)?</span><span class="ref">ref. RN-701, RN-901</span></div></div>
+
+  <div class="grupo-dec">Funcionários</div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D27</span>Antecedência mínima para a empresa solicitar a admissão</span><span class="ref">ref. RN-589</span></div>
+    <p>Bloquear ou só alertar? O escritório pode configurar?</p>
+    <p class="sug"><b>Sugestão:</b> 2 dias úteis antes do início.</p></div>
+  <div class="dec critica"><div class="topo"><span class="q"><span class="id">D28</span>A empresa também solicita desligamentos pelo portal?</span><span class="ref">ref. RN-578</span></div>
+    <p class="sug"><b>Sugestão:</b> sim, no mesmo modelo da admissão (a empresa solicita, o escritório analisa e conclui, e devolve o TRCT para assinatura).</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D29</span>Ao concluir a admissão, o escritório gera documentos para a empresa assinar e devolver?</span><span class="ref">ref. RN-599</span></div>
+    <p>Ex.: contrato de trabalho, ficha de registro.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D30</span>Cada escritório pode personalizar a lista de documentos da admissão?</span><span class="ref">ref. RN-526</span></div>
+    <p>Coerente com o catálogo mensal.</p>
+    <p class="sug"><b>Sugestão:</b> sim.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D31</span>Matrícula do funcionário gerada pelo sistema ou informada? Quais categorias aceitar?</span><span class="ref">ref. RN-520</span></div>
+    <p>Ex.: empregado comum e aprendiz.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D32</span>Contratos intermitente e temporário nesta fase?</span><span class="ref">ref. RN-521</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D33</span>Salário abaixo do mínimo: alertar ou bloquear?</span><span class="ref">ref. RN-524</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D34</span>Aviso de fim de experiência com quantos dias de antecedência?</span><span class="ref">ref. RN-522</span></div>
+    <p class="sug"><b>Sugestão:</b> 10 dias.</p></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D35</span>Quem pode reverter um desligamento já concluído?</span><span class="ref">ref. RN-548</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D36</span>O sistema deve calcular a rescisão no futuro?</span><span class="ref">ref. RN-549</span></div></div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D37</span>Prazos de guarda dos documentos trabalhistas</span><span class="ref">ref. RN-563</span></div>
+    <p>Até definir, nada é descartado.</p></div>
+
+  <div class="grupo-dec">Relatórios</div>
+  <div class="dec"><div class="topo"><span class="q"><span class="id">D38</span>O colaborador vê os próprios números no relatório? O relatório pode ser exportado para Excel?</span><span class="ref">ref. RN-556</span></div>
+    <p class="sug"><b>Sugestão:</b> sim para ambos.</p></div>
+</section>
+
+<!-- ======================= GLOSSÁRIO ======================= -->
+<section class="parte glossario" id="glossario">
+  <div class="parte-cab"><div class="num">Anexo</div><h1>Glossário</h1></div>
+  <table>
+    <tr><td class="k">ASO</td><td>Atestado de Saúde Ocupacional (exame admissional, demissional etc.).</td></tr>
+    <tr><td class="k">CBO</td><td>Classificação Brasileira de Ocupações (código do cargo).</td></tr>
+    <tr><td class="k">CFOP</td><td>Código que identifica o tipo de operação de uma nota (venda, compra, devolução…).</td></tr>
+    <tr><td class="k">Chave de acesso</td><td>Número de 44 dígitos que identifica uma nota eletrônica.</td></tr>
+    <tr><td class="k">CND / CNDT / CRF</td><td>Certidões de regularidade (federal, trabalhista, FGTS).</td></tr>
+    <tr><td class="k">Competência</td><td>Mês de trabalho de uma empresa (ex.: 09/2026).</td></tr>
+    <tr><td class="k">DANFE</td><td>Versão em PDF/impressa da nota eletrônica.</td></tr>
+    <tr><td class="k">eSocial</td><td>Sistema do governo onde se informam admissões, desligamentos e demais dados trabalhistas.</td></tr>
+    <tr><td class="k">LGPD</td><td>Lei Geral de Proteção de Dados.</td></tr>
+    <tr><td class="k">NF-e / NFC-e</td><td>Nota fiscal eletrônica / nota fiscal de consumidor eletrônica.</td></tr>
+    <tr><td class="k">NFS-e</td><td>Nota fiscal de serviço eletrônica.</td></tr>
+    <tr><td class="k">Portal da empresa</td><td>Área do sistema usada pelas empresas clientes.</td></tr>
+    <tr><td class="k">Rotina mensal</td><td>Documentos e tarefas que uma empresa tem todo mês.</td></tr>
+    <tr><td class="k">SEFAZ</td><td>Secretaria da Fazenda, que autoriza as notas.</td></tr>
+    <tr><td class="k">TRCT</td><td>Termo de Rescisão do Contrato de Trabalho.</td></tr>
+    <tr><td class="k">XML</td><td>Arquivo oficial da nota fiscal eletrônica.</td></tr>
+  </table>
+</section>
+
+</body>
+</html>

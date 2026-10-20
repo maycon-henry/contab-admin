@@ -1,0 +1,24 @@
+# Usado pelo build da imagem do Render (docker/render/Dockerfile)
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+public/build
+public/hot
+public/storage
+bootstrap/cache/*.php
+storage/logs/*
+storage/app/private/*
+storage/app/public/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+storage/pail
+tests
+docs
+docker-compose.yml
+*.log

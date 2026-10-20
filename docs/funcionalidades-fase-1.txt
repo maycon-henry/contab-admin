@@ -1,0 +1,1312 @@
+==========================================================================
+  SISTEMA DE GESTÃO PARA ESCRITÓRIOS DE CONTABILIDADE
+  Descrição funcional da primeira fase
+  Versão 1.0 - outubro de 2026
+==========================================================================
+
+SOBRE ESTE DOCUMENTO
+--------------------------------------------------------------------------
+
+Este documento descreve, em linguagem de negócio, como o sistema vai
+funcionar na primeira fase. Ele serve para:
+
+  - alinhar entre os sócios o que será construído;
+  - dar base para conversas com escritórios interessados;
+  - registrar as decisões de negócio que ainda precisam ser tomadas
+    (Parte 9), cada uma com o contexto e uma sugestão.
+
+Como ler:
+
+  - Parte 1 e 2 explicam o produto e os conceitos que valem para todos.
+  - Partes 3, 4 e 5 contam o CENÁRIO de cada tipo de usuário:
+    administrador, colaborador e empresa.
+  - Parte 6 mostra o que o sistema faz sozinho, sem ninguém clicar.
+  - Partes 7 e 8 tratam de segurança e do que fica para depois.
+  - Parte 9 lista as DECISÕES PENDENTES.
+
+Ao longo do texto aparecem códigos como "(ref. RN-589)". Eles apontam
+para a regra correspondente no documento técnico de desenvolvimento e
+facilitam a conversa entre negócio e desenvolvimento. Não é preciso
+consultá-los para entender o texto.
+
+Exemplo usado no documento:
+
+  - Escritório: "Contabilidade Silva"
+  - Administrador: Ana (sócia do escritório)
+  - Colaborador: Bruno (equipe do departamento pessoal)
+  - Empresa cliente: "Padaria Pão Quente Ltda", atendida pelo escritório
+  - Usuária da empresa: Carla (gerente da padaria)
+  - Novo funcionário da padaria: João
+
+
+==========================================================================
+PARTE 1 - VISÃO GERAL
+==========================================================================
+
+1.1 O PROBLEMA
+--------------------------------------------------------------------------
+
+Hoje, a troca de informações entre escritório e empresas acontece por
+e-mail, WhatsApp, pastas compartilhadas e telefone. Isso gera:
+
+  - documentos perdidos ou enviados para a pessoa errada;
+  - dificuldade de saber o que cada empresa já entregou no mês;
+  - cobrança manual, repetitiva e esquecida;
+  - admissões de funcionários com documentos faltando e prazos legais
+    estourados;
+  - nenhuma visão de quanto trabalho cada membro da equipe realizou.
+
+1.2 A SOLUÇÃO
+--------------------------------------------------------------------------
+
+Um sistema na internet, acessado pelo navegador, onde:
+
+  - a EMPRESA envia documentos, notas fiscais e pedidos de admissão em
+    um único lugar, sabendo exatamente o que falta e até quando;
+  - o ESCRITÓRIO recebe tudo organizado por empresa e por mês, confere,
+    aceita ou recusa, e registra as admissões;
+  - o sistema COBRA automaticamente as empresas atrasadas, todos os
+    dias, por e-mail;
+  - o ADMINISTRADOR enxerga quem está devendo documentação e quanto
+    cada colaborador produziu.
+
+1.3 MODELO DE NEGÓCIO
+--------------------------------------------------------------------------
+
+  - O sistema é vendido como serviço (assinatura) para escritórios de
+    contabilidade. Vários escritórios usam o mesmo sistema ao mesmo
+    tempo.
+  - Cada escritório é totalmente isolado: um escritório nunca vê dados
+    de outro, nem sabe que o outro existe.
+  - As empresas atendidas pelo escritório também acessam o sistema
+    (portal da empresa), sem custo adicional para elas. Quem assina é
+    o escritório.
+  - Nesta fase o sistema é web (navegador, no computador ou celular).
+    Ele está sendo construído para que, no futuro, existam aplicativos
+    de celular usando exatamente as mesmas regras.
+
+1.4 OS TRÊS TIPOS DE USUÁRIO
+--------------------------------------------------------------------------
+
+  ADMINISTRADOR (equipe do escritório)
+    Responsável pelo escritório no sistema. Acesso total: empresas,
+    equipe, configurações, relatórios. Todo escritório tem um
+    administrador principal, chamado "titular".
+
+  COLABORADOR (equipe do escritório)
+    Executa o trabalho do dia a dia: confere documentos, faz admissões,
+    atende as empresas. Acessa apenas o que o seu PERFIL permite.
+    Nesta fase existe um único perfil, "Colaborador". O sistema já
+    nasce preparado para outros perfis no futuro (Fiscal, Departamento
+    Pessoal, Financeiro...), bastando criá-los e definir o que cada um
+    pode fazer.
+
+  USUÁRIO DA EMPRESA (cliente do escritório)
+    Pessoa da empresa atendida (sócio, gerente, RH). Acessa o "portal
+    da empresa" e vê somente os dados da(s) empresa(s) a que está
+    ligada. Uma pessoa pode estar ligada a mais de uma empresa do mesmo
+    escritório (ex.: sócio de duas empresas).
+
+1.5 ORDEM DE ENTREGA DA PRIMEIRA FASE
+--------------------------------------------------------------------------
+
+  1. Base: página pública, login, escritórios, usuários e permissões.
+  2. Cadastro de empresas clientes.
+  3. Funcionários: admissão (pedida pela empresa, registrada pelo
+     escritório) e desligamento.
+  4. Área de trabalho mensal: documentos do mês, avaliação e
+     fechamento do mês.
+  5. Notas fiscais: envio de XML com organização automática por mês.
+  6. Painel do administrador, cobrança diária automática e relatório
+     de admissões por colaborador.
+
+
+==========================================================================
+PARTE 2 - CONCEITOS QUE VALEM PARA TODOS
+==========================================================================
+
+2.1 ENTRADA NO SISTEMA
+--------------------------------------------------------------------------
+
+PÁGINA PÚBLICA
+  O endereço principal do sistema mostra uma página de apresentação do
+  produto com o botão "Entrar". Quem já está logado vê "Ir para o
+  painel". O conteúdo desta página (textos, planos, preços, contato)
+  ainda será definido (ver Parte 9).
+
+NINGUÉM CRIA CONTA SOZINHO - O ACESSO É POR CONVITE
+  1. Alguém do escritório cadastra o nome e o e-mail da pessoa.
+  2. A pessoa recebe um e-mail com um link.
+  3. Pelo link, ela cria a própria senha e já entra no sistema.
+
+  Regras:
+  - O link do convite vale por 7 dias. Pode ser reenviado; ao reenviar,
+    o link anterior deixa de funcionar.
+  - Ninguém do escritório define ou vê a senha de outra pessoa.
+  - Cada e-mail só pode ser usado por uma pessoa em todo o sistema.
+
+LOGIN
+  - Todos usam a mesma tela, com e-mail e senha.
+  - Depois do login, cada um vai para a sua área:
+      administrador e colaborador -> painel do escritório
+      usuário da empresa         -> portal da empresa
+  - Se a senha estiver errada, a mensagem é sempre "e-mail ou senha
+    inválidos", sem dizer se o e-mail existe (proteção contra quem
+    tenta descobrir contas).
+  - Depois de 5 tentativas erradas, o acesso fica bloqueado por
+    15 minutos.
+  - Opção "manter conectado". Sem ela, após 2 horas sem uso o sistema
+    pede login novamente.
+
+QUEM NÃO CONSEGUE ENTRAR
+  - Usuário desativado.
+  - Usuário que ainda não aceitou o convite.
+  - Usuários de um escritório suspenso ou cancelado (ex.: assinatura
+    em atraso). Eles veem uma mensagem pedindo que procurem o
+    administrador.
+  - Usuário de empresa que não está ligado a nenhuma empresa ativa.
+
+SENHA
+  - Mínimo de 8 caracteres, com letras e números.
+  - O sistema recusa senhas que já apareceram em vazamentos públicos.
+  - "Esqueci minha senha": link por e-mail, válido por 60 minutos e
+    de uso único. A tela responde sempre da mesma forma, exista ou não
+    o e-mail.
+  - Ao trocar a senha, todas as outras sessões abertas daquela pessoa
+    são encerradas.
+
+HISTÓRICO DE ACESSOS
+  Todo login (certo ou errado), saída, troca e recuperação de senha
+  fica registrado com data, hora, local de acesso (IP) e navegador.
+  O administrador pode consultar.
+
+
+2.2 O MÊS DE TRABALHO ("COMPETÊNCIA")
+--------------------------------------------------------------------------
+
+Todo o trabalho do escritório com uma empresa é organizado MÊS A MÊS.
+Cada mês de cada empresa se chama COMPETÊNCIA.
+
+  Exemplo: "Padaria Pão Quente - competência 09/2026" reúne tudo o que
+  se refere a setembro de 2026: documentos, notas fiscais, admissões.
+
+ÁREA DE TRABALHO
+  É a tela de uma empresa em um mês.
+  - Ao escolher uma empresa, o sistema abre a área de trabalho no mês
+    padrão (se o padrão é o mês atual ou o anterior ainda será
+    decidido - ver Parte 9).
+  - Para trabalhar em outro mês, troca-se o mês num seletor.
+  - Empresa e mês ficam SEMPRE visíveis no topo da tela. Se o mês
+    escolhido não for o padrão, aparece um aviso em destaque
+    ("Você está trabalhando em 03/2025"), para evitar que algo seja
+    lançado no mês errado.
+  - Só é possível abrir meses desde o início do atendimento da empresa
+    até o mês atual. Meses futuros não podem ser abertos.
+
+O QUE PERTENCE AO MÊS E O QUE NÃO PERTENCE
+  - Não pertencem a um mês (valem sempre): dados da empresa, sócios,
+    filiais, cadastro dos funcionários.
+  - Pertencem ao mês em que acontecem: documentos mensais, notas
+    fiscais, admissões, desligamentos.
+
+FECHAMENTO DO MÊS
+  - Quando todos os documentos obrigatórios do mês estiverem
+    resolvidos (aceitos ou marcados como "não se aplica"), o escritório
+    pode FECHAR o mês.
+  - Mês fechado vira somente leitura: não aceita novos documentos,
+    notas, avaliações ou alterações.
+  - Reabrir exige permissão específica e justificativa, e fica
+    registrado.
+  - Vários meses podem estar abertos ao mesmo tempo, e não é preciso
+    fechar em ordem.
+
+
+2.3 DOCUMENTOS DO MÊS: CATÁLOGO, ROTINA E ITENS
+--------------------------------------------------------------------------
+
+CATÁLOGO DE DOCUMENTOS (definido por cada escritório)
+  Cada escritório decide o que exige das suas empresas todo mês. Um
+  escritório pode exigir certidão negativa municipal mensalmente;
+  outro pode não exigir. Por isso cada escritório tem o SEU catálogo.
+
+  Exemplos de itens de catálogo:
+    - Extrato bancário
+    - Comprovantes de despesas
+    - Notas fiscais de saída / de entrada
+    - CND Federal (Receita Federal / PGFN)
+    - CRF - Certificado de Regularidade do FGTS
+    - CNDT - Certidão Negativa de Débitos Trabalhistas
+    - CND Estadual / CND Municipal
+
+  Além de documentos, o catálogo pode ter TAREFAS internas do
+  escritório (ex.: "Conciliação bancária"), que a empresa não vê.
+
+ROTINA MENSAL DA EMPRESA
+  É a parte do catálogo que se aplica a uma empresa. Cada item do
+  catálogo diz a quem se aplica: todas as empresas, só as de um regime
+  de impostos (ex.: Lucro Presumido), ou empresas escolhidas.
+  O escritório ainda pode, em cada empresa, dispensar um item (com
+  justificativa) ou mudar prazo e obrigatoriedade só para ela.
+
+ITENS DO MÊS
+  No dia 1º de cada mês, o sistema cria para cada empresa ativa a lista
+  de ITENS que ela deve entregar daquele mês, conforme a sua rotina.
+
+  Cada item de documento passa por estas situações:
+
+    PENDENTE ........ a empresa ainda não enviou.
+    EM AVALIAÇÃO .... a empresa enviou (ou informou "sem movimento");
+                      o escritório precisa conferir.
+    ACEITO .......... o escritório conferiu: documento correto e válido.
+    RECUSADO ........ o escritório recusou e informou o motivo;
+                      a empresa precisa enviar novamente.
+    NÃO SE APLICA ... não havia o que entregar no mês (ex.: "sem
+                      movimento" confirmado pelo escritório).
+
+  ATRASADO não é uma situação escolhida por alguém: é o sistema que
+  marca quando o prazo passou e o item ainda está PENDENTE ou RECUSADO.
+
+  Nada é sobrescrito: cada envio e cada avaliação ficam guardados no
+  histórico do item.
+
+
+2.4 CAMINHO DE UMA ADMISSÃO (RESUMO)
+--------------------------------------------------------------------------
+
+  EMPRESA                                 ESCRITÓRIO
+  -------                                 ----------
+  1. Cadastra o funcionário
+     (RASCUNHO)
+  2. Preenche dados e anexa
+     documentos
+  3. Clica "Solicitar admissão"  ------>  EM ANÁLISE
+                                          (entra na fila de admissões)
+                                          4. Colaborador assume
+                                             (fica registrado quem
+                                             iniciou o atendimento)
+                                          5a. Precisa de correção:
+     DEVOLVIDA  <-------------------------    devolve com o motivo
+  6. Corrige e solicita
+     novamente  ------------------------>  EM ANÁLISE (mesmo
+                                          colaborador)
+                                          5b. Tudo certo: conclui
+                                          ---> ADMITIDO
+                                          (fica registrado quem
+                                          admitiu)
+
+  Os detalhes de cada lado estão nas Partes 4 (colaborador) e
+  5 (empresa).
+
+
+==========================================================================
+PARTE 3 - CENÁRIO DO ADMINISTRADOR
+==========================================================================
+
+O administrador faz TUDO o que o colaborador faz (Parte 4) e, além
+disso, cuida da gestão do escritório dentro do sistema.
+
+3.1 PRIMEIRO ACESSO
+--------------------------------------------------------------------------
+
+  - O escritório nasce com um administrador TITULAR. Como o escritório
+    é criado (o próprio escritório se cadastra pela página pública ou a
+    nossa equipe cadastra) ainda será decidido (ver Parte 9).
+  - Ao entrar pela primeira vez, Ana (administradora da Contabilidade
+    Silva) encontra:
+      - o catálogo de documentos sugerido pelo sistema, que ela pode
+        aceitar, editar ou descartar;
+      - a configuração de cobrança automática;
+      - nenhuma empresa ainda.
+
+  Roteiro típico de implantação:
+    1. Revisar o catálogo de documentos (3.4).
+    2. Convidar os colaboradores (3.3).
+    3. Cadastrar as empresas clientes (3.5).
+    4. Convidar as pessoas de cada empresa para o portal (3.3).
+    5. Definir a data de corte da cobrança (3.6).
+
+3.2 TELA INICIAL: PAINEL DO ADMINISTRADOR
+--------------------------------------------------------------------------
+
+Ao fazer login, Ana vê:
+
+  INDICADOR "EMPRESAS"
+    Total de empresas do escritório, separado em ativas, suspensas e
+    encerradas. Clicando, abre a lista de empresas já filtrada.
+
+  INDICADOR "EMPRESAS DEVENDO DOCUMENTAÇÃO"
+    Quantas empresas ativas têm pelo menos um documento atrasado
+    (prazo vencido e item pendente ou recusado), em qualquer mês
+    ainda aberto.
+
+  LISTA "EMPRESAS DEVENDO DOCUMENTAÇÃO"
+    Uma linha por empresa, da mais atrasada para a menos atrasada:
+      - nome da empresa;
+      - quantos documentos estão atrasados (e quantos são
+        obrigatórios);
+      - quantos foram recusados e aguardam reenvio;
+      - mês mais antigo com atraso;
+      - há quantos dias está o atraso mais antigo.
+
+    Exemplo:
+      Padaria Pão Quente  | 3 atrasados (2 obrig.) | 1 recusado |
+                          | desde 08/2026          | 41 dias
+
+    - Cada linha pode ser expandida para ver QUAIS documentos faltam.
+    - Clicando na empresa, abre a área de trabalho dela no mês mais
+      antigo com atraso.
+    - Filtros: mês, tipo de documento, "somente obrigatórios".
+
+  Regra importante: documento ENVIADO e aguardando avaliação NÃO conta
+  como dívida da empresa. A partir do envio, a pendência é do
+  escritório (conferir).
+
+3.3 EQUIPE E ACESSOS
+--------------------------------------------------------------------------
+
+COLABORADORES E ADMINISTRADORES
+  - Somente o administrador convida, edita, ativa e desativa pessoas
+    da equipe do escritório.
+  - Ao convidar, informa nome, e-mail, tipo (administrador ou
+    colaborador) e, para colaboradores, o perfil.
+  - Desativar alguém corta o acesso imediatamente, inclusive se a
+    pessoa estiver com o sistema aberto.
+  - Mudança de perfil vale na hora.
+  - Ninguém é apagado: as pessoas são desativadas, e tudo o que
+    fizeram continua no histórico com o nome delas.
+
+ADMINISTRADOR TITULAR
+  - Não pode ser desativado nem virar colaborador.
+  - Para isso, precisa antes transferir a titularidade para outro
+    administrador. Só o próprio titular faz essa transferência.
+  - Nenhum administrador pode desativar a si mesmo.
+
+PERMISSÕES EXCLUSIVAS DO ADMINISTRADOR
+  Nunca podem ser dadas a um colaborador:
+    - gerenciar a equipe (usuários do escritório);
+    - gerenciar perfis e permissões;
+    - alterar dados e configurações do escritório.
+
+PESSOAS DAS EMPRESAS (PORTAL)
+  - O administrador (ou colaborador com permissão) convida as pessoas
+    de cada empresa para o portal, pelo mesmo processo de convite.
+  - Uma pessoa pode ser ligada a mais de uma empresa do escritório.
+  - Desligar a pessoa de uma empresa tira o acesso a ela na hora.
+    Se for a última empresa da pessoa, ela é desativada.
+
+HISTÓRICO DE ACESSOS
+  Ana pode consultar quem entrou no sistema, quando e de onde.
+
+3.4 CATÁLOGO DE DOCUMENTOS
+--------------------------------------------------------------------------
+
+Define o que o escritório exige das empresas todo mês. Para cada item:
+
+  NOME ................ ex.: "CND Federal"
+  INSTRUÇÕES .......... texto que a empresa vê: o que é e onde obter
+                        (pode ter links). Ex.: "Emita em
+                        www.gov.br/... informando o CNPJ da empresa."
+  TIPO ................ documento (a empresa envia) ou tarefa (o
+                        escritório executa, a empresa não vê).
+  FORMATOS ............ PDF, imagem, XML, planilha; se aceita mais de
+                        um arquivo.
+  PRAZO ............... dia do mês seguinte. Ex.: dia 10 -> o documento
+                        de setembro vence em 10 de outubro.
+  OBRIGATÓRIO ......... se impede o fechamento do mês.
+  TEM VALIDADE ........ se o documento tem data de vencimento
+                        (certidões).
+  É CERTIDÃO .......... habilita registrar se a certidão é negativa ou
+                        positiva na avaliação.
+  APROVEITAR VÁLIDO ... ver abaixo.
+  A QUEM SE APLICA .... todas as empresas, só um regime de impostos, ou
+                        empresas escolhidas.
+  SITUAÇÃO ............ ativo ou inativo.
+
+APROVEITAR DOCUMENTO AINDA VÁLIDO
+  Uma CND Federal vale 180 dias. Com esta opção ligada, se a certidão
+  aceita no mês passado ainda vale até o fim do mês novo, o item do mês
+  novo já nasce ACEITO ("aceito por validade"), sem a empresa precisar
+  reenviar. Com a opção desligada, a empresa envia todo mês. A escolha
+  é por item do catálogo.
+
+REGRAS DO CATÁLOGO
+  - Itens não são apagados, só inativados.
+  - Mudanças no catálogo valem para os meses criados DEPOIS da mudança.
+    Meses já criados não mudam.
+  - Documento exigido de uma única empresa também é criado no catálogo
+    (com aplicação "empresas escolhidas"). Assim, todo documento tem um
+    tipo, e é possível ver relatórios por tipo em todas as empresas.
+
+AJUSTES POR EMPRESA
+  Na tela da empresa, Ana pode:
+    - dispensar um item para aquela empresa, com justificativa
+      (ex.: "empresa sem inscrição estadual - dispensar CND Estadual");
+    - mudar o prazo ou a obrigatoriedade só para ela.
+  A tela mostra a rotina da empresa com a origem de cada item e os
+  ajustes destacados.
+
+3.5 CADASTRO DE EMPRESAS CLIENTES
+--------------------------------------------------------------------------
+
+DADOS DA EMPRESA
+  Obrigatórios: CNPJ (validado e único no escritório), razão social,
+  natureza jurídica, regime de impostos (MEI, Simples Nacional, Lucro
+  Presumido, Lucro Real), data de início do atendimento pelo
+  escritório, situação.
+
+  Complementares: nome fantasia, data de abertura, porte, atividades
+  (CNAE), capital social, situação na Receita, inscrições estadual e
+  municipal, endereço, telefone, e-mail, contato responsável na
+  empresa (nome, CPF, telefone, e-mail).
+
+  Ainda será decidido se o sistema buscará esses dados
+  automaticamente pelo CNPJ (ver Parte 9).
+
+SÓCIOS
+  Nome, CPF ou CNPJ, qualificação (ex.: sócio-administrador),
+  percentual e data de entrada. A soma dos percentuais deve dar 100%.
+
+REGIME DE IMPOSTOS COM HISTÓRICO
+  Mudança de regime não apaga o anterior: o sistema guarda de quando
+  até quando cada regime valeu.
+
+DADOS DE EMPREGADOR (só para empresas com funcionários)
+  - Informações exigidas pelo governo (eSocial) para quem tem
+    empregados: classificação tributária e indicativos (cooperativa,
+    construtora, desoneração da folha).
+  - Filiais: a matriz é criada automaticamente; filiais podem ser
+    incluídas. Cada uma com CNPJ, endereço, atividade principal,
+    alíquota de risco (RAT) e fator previdenciário (FAP).
+  - Grau de risco da filial (1 a 4), usado na regra do exame
+    demissional.
+  - Sem esses dados, a empresa não consegue iniciar admissões.
+
+SITUAÇÕES DA EMPRESA
+  ATIVA ...... funcionamento normal.
+  SUSPENSA ... atendimento pausado.
+  ENCERRADA .. não gera novos meses nem admite funcionários, mas todo
+               o histórico é mantido.
+  - Empresa nunca é apagada.
+  - Empresa com funcionários ativos, em admissão ou em desligamento
+    não pode ser encerrada.
+
+3.6 COBRANÇA AUTOMÁTICA (CONFIGURAÇÃO)
+--------------------------------------------------------------------------
+
+  - Liga ou desliga a cobrança automática para o escritório inteiro.
+  - Define a DATA DE CORTE padrão: o dia do mês a partir do qual as
+    empresas com pendências passam a receber a cobrança diária
+    (ex.: dia 5). Aceita de 1 a 28.
+  - Define uma data de corte própria para uma empresa, quando
+    necessário (ex.: empresa que só fecha o caixa no dia 8).
+  - SUSPENDE a cobrança de uma empresa por um período (ex.: empresa em
+    negociação), com motivo e data de retorno. Na data, a cobrança
+    volta sozinha.
+  - Envia uma cobrança manualmente, a qualquer momento.
+  - Consulta o histórico de cobranças de cada empresa: dia, quem
+    recebeu, quais itens foram cobrados.
+
+  O funcionamento da cobrança está na Parte 6.
+
+3.7 RELATÓRIO DE ADMISSÕES POR COLABORADOR
+--------------------------------------------------------------------------
+
+Para cada admissão, o sistema grava de forma PERMANENTE:
+  - quem SOLICITOU (pessoa da empresa ou do escritório) e quando;
+  - quem INICIOU O ATENDIMENTO (o primeiro colaborador a assumir) e
+    quando;
+  - quem ADMITIU (o colaborador que concluiu) e quando.
+
+Esses registros não podem ser alterados por ninguém, nem pelo
+administrador. Se a admissão for transferida no meio do caminho, quem
+iniciou continua o mesmo e quem concluir fica como quem admitiu.
+
+O relatório mostra, para cada colaborador, no período escolhido:
+
+  ADMISSÕES CONCLUÍDAS ....... principal número
+  ATENDIMENTOS INICIADOS ..... quantas ele assumiu primeiro
+  DEVOLUÇÕES FEITAS .......... quantas vezes devolveu à empresa
+  TEMPO MÉDIO ................ da solicitação até a admissão, e de
+                               quando assumiu até a admissão
+
+  Exemplo (outubro/2026):
+    Bruno   | 14 concluídas | 15 iniciadas | 3 devoluções | 1,8 dia
+    Daniela |  9 concluídas |  8 iniciadas | 1 devolução  | 2,4 dias
+
+  - Filtros: período, empresa, colaborador. Padrão: mês atual.
+  - Cada linha abre a lista dos funcionários admitidos por aquele
+    colaborador.
+  - Colaborador desativado continua aparecendo com seu histórico.
+
+3.8 OUTRAS AÇÕES DO ADMINISTRADOR
+--------------------------------------------------------------------------
+
+  - Transferir uma admissão de um colaborador para outro.
+  - Reabrir um mês fechado (com justificativa).
+  - Tudo o que o colaborador faz (Parte 4).
+
+
+==========================================================================
+PARTE 4 - CENÁRIO DO COLABORADOR
+==========================================================================
+
+O que o colaborador pode acessar depende do seu perfil. A sugestão
+para o perfil inicial é: empresas, funcionários, documentos e notas,
+sem acesso a dados financeiros do escritório nem a dados sensíveis dos
+funcionários. Isso ainda será confirmado (ver Parte 9).
+
+4.1 TELA INICIAL
+--------------------------------------------------------------------------
+
+Nesta fase, o colaborador não tem painel de números. Ao entrar, Bruno
+vê uma tela de boas-vindas e o menu. (Um painel do colaborador, com
+as filas dele, está previsto para depois.)
+
+4.2 EMPRESAS E ÁREA DE TRABALHO
+--------------------------------------------------------------------------
+
+  - Consulta e cadastra empresas (conforme permissão).
+  - Abre a área de trabalho de uma empresa e vê o PAINEL DO MÊS:
+      - progresso (itens aceitos ou concluídos / total);
+      - itens pendentes, atrasados, recusados e aguardando avaliação,
+        com prazo;
+      - alertas: certidões positivas, documentos vencidos ou a vencer;
+      - notas fiscais do mês;
+      - admissões e desligamentos do mês, com seus prazos.
+  - Inclui um item avulso no mês (de um tipo do catálogo) ou remove um
+    item gerado (com justificativa).
+  - Executa e conclui as TAREFAS internas do mês.
+  - Fecha o mês, quando tudo estiver resolvido (conforme permissão).
+
+4.3 AVALIAR DOCUMENTOS ENVIADOS PELAS EMPRESAS
+--------------------------------------------------------------------------
+
+FILA DE AVALIAÇÃO
+  Uma tela reúne todos os documentos enviados pelas empresas que
+  aguardam conferência, do mais antigo para o mais novo, com filtros
+  por empresa, tipo de documento e mês. Dá para avaliar direto da
+  fila.
+
+BOTÃO "AVALIAR"
+  Para cada documento, Bruno escolhe:
+
+  ACEITAR
+    O documento é o solicitado, está legível, pertence à empresa e é
+    válido. O item vira ACEITO.
+    - Se o documento tem validade, Bruno confirma ou corrige a data de
+      validade. Documento já vencido NÃO pode ser aceito.
+    - Se é certidão, Bruno registra o resultado:
+        NEGATIVA (empresa sem débitos)
+        POSITIVA COM EFEITOS DE NEGATIVA (débitos parcelados/suspensos)
+        POSITIVA (empresa com débitos)
+      Certidão positiva é aceita como documento, mas gera um ALERTA
+      para o escritório, pois indica um problema da empresa no órgão.
+
+  RECUSAR
+    Escolhe o motivo:
+      - documento ilegível;
+      - documento diferente do solicitado;
+      - documento de outra empresa;
+      - documento vencido;
+      - documento incompleto;
+      - outro.
+    E escreve um complemento. O item vira RECUSADO e a empresa recebe
+    um aviso com o motivo.
+
+"SEM MOVIMENTO"
+  Quando a empresa informa que não houve movimento, Bruno confirma
+  (o item vira NÃO SE APLICA) ou recusa (o item vira RECUSADO).
+
+  A empresa vê o resultado e o motivo, mas não o nome de quem avaliou.
+  O escritório vê tudo.
+
+4.4 ADMITIR FUNCIONÁRIOS (LADO DO ESCRITÓRIO)
+--------------------------------------------------------------------------
+
+Exemplo: Carla, da Padaria Pão Quente, solicitou a admissão do João,
+com início previsto para 03/11/2026.
+
+PASSO 1 - FILA DE ADMISSÕES
+  A admissão do João aparece na fila, como EM ANÁLISE. A fila mostra:
+  empresa, funcionário, cargo, data de início prevista, data da
+  solicitação, responsável (se houver) e prazo legal.
+  - Ordem: data de início mais próxima primeiro.
+  - Destaque para as que vencem o prazo legal em até 1 dia útil ou já
+    venceram. (Por lei, o registro no eSocial deve ser feito até o
+    dia anterior ao início do trabalho.)
+  - Filtros: empresa, responsável, "sem responsável", período.
+
+PASSO 2 - ASSUMIR
+  Bruno clica em "Assumir". A partir daí:
+  - Bruno é o RESPONSÁVEL pela admissão;
+  - fica registrado que Bruno INICIOU O ATENDIMENTO;
+  - outro colaborador não pode assumir, a não ser por transferência
+    (feita pelo administrador ou pelo próprio Bruno).
+
+PASSO 3 - ANALISAR
+  - Bruno confere os dados e CADA documento, marcando cada um como
+    aceito ou recusado (com motivo).
+  - Pequenos erros (ex.: CEP digitado errado) ele mesmo corrige. A
+    correção fica registrada (antes, depois, quem, quando) e a empresa
+    consegue ver.
+
+PASSO 4A - DEVOLVER (quando necessário)
+  Se houver documento recusado ou dado que só a empresa pode resolver
+  (ex.: comprovante de residência ilegível), Bruno DEVOLVE com o
+  motivo. A admissão vira DEVOLVIDA, a Carla é avisada, corrige e
+  solicita de novo. A admissão volta para a fila já com o Bruno como
+  responsável.
+
+PASSO 4B - CONCLUIR
+  Com tudo certo, Bruno completa os dados técnicos que cabem ao
+  escritório:
+    - matrícula do funcionário;
+    - categoria do trabalhador, código do cargo (CBO), natureza da
+      atividade, regime de jornada, sindicato e demais dados exigidos
+      pelo eSocial;
+    - data de admissão efetiva;
+    - número do recibo do eSocial (opcional).
+  Clica em "Concluir". A admissão vira ADMITIDO, o João passa a constar
+  como funcionário ativo da padaria e fica registrado que BRUNO
+  ADMITIU. A Carla é avisada.
+
+CANCELAR
+  Se o candidato desistir, o escritório cancela a admissão com
+  justificativa. A empresa pode pedir o cancelamento, mas quem executa
+  é o escritório.
+
+LINHA DO TEMPO
+  Cada etapa (solicitada, assumida, devolvida, concluída, cancelada)
+  aparece numa linha do tempo, com data, hora, pessoa e motivo,
+  visível para o escritório e para a empresa.
+
+4.5 REGRAS LEGAIS QUE O SISTEMA VERIFICA NA ADMISSÃO
+--------------------------------------------------------------------------
+
+  IDADE MÍNIMA
+    16 anos na data de admissão; 14 anos para aprendiz.
+
+  CONTRATO DE EXPERIÊNCIA
+    Máximo de 90 dias no total, podendo ser dividido em até 2 períodos
+    (uma prorrogação). Ex.: 45 + 45 dias. O sistema calcula as datas
+    de término e avisa antes de cada vencimento. A prorrogação precisa
+    ser registrada até o primeiro dia útil seguinte.
+
+  CONTRATO POR PRAZO DETERMINADO
+    Data de término obrigatória; máximo de 2 anos.
+
+  SALÁRIO
+    O sistema alerta se o salário for menor que o salário mínimo
+    nacional, proporcional à jornada.
+
+  EXAME ADMISSIONAL (ASO)
+    A data do exame deve ser igual ou anterior à data de admissão. O
+    sistema guarda os dados do exame: tipo, data, resultado (apto ou
+    inapto), médico e CRM.
+
+  PRAZOS DO GOVERNO
+    A lei divide os dados da admissão em duas etapas:
+      - até o dia anterior ao início do trabalho: CPF, nascimento,
+        data de admissão, matrícula, categoria, cargo, salário, tipo
+        de contrato;
+      - até o dia 15 do mês seguinte: os demais dados.
+    O sistema mostra esses prazos e avisa quando estão perto.
+
+  RECONTRATAÇÃO
+    Se a pessoa foi dispensada sem justa causa há menos de 90 dias, o
+    sistema alerta (a fiscalização pode entender como fraude ao
+    seguro-desemprego/FGTS). O alerta não impede a admissão.
+
+  FUNCIONÁRIO x CONTRATO
+    Cada pessoa tem um cadastro na empresa. Cada vez que é contratada,
+    ganha um novo CONTRATO. Numa recontratação, o histórico dos
+    contratos anteriores é mantido. Uma pessoa só pode ter um contrato
+    em andamento por vez na mesma empresa.
+
+4.6 DESLIGAR FUNCIONÁRIOS
+--------------------------------------------------------------------------
+
+Nesta fase, o desligamento é registrado pelo escritório. Se a empresa
+também vai poder solicitar o desligamento pelo portal ainda será
+decidido (ver Parte 9).
+
+DADOS DO DESLIGAMENTO
+  Motivo, data de desligamento (último dia do contrato), tipo de aviso
+  prévio (trabalhado, indenizado, dispensado ou não se aplica), data do
+  aviso, pensão alimentícia (se houver), número de processo trabalhista
+  (se o desligamento for por decisão judicial), valor líquido da
+  rescisão e observações.
+
+MOTIVOS DISPONÍVEIS (padrão do governo - eSocial)
+  - Justa causa, por iniciativa do empregador
+  - Sem justa causa, por iniciativa do empregador
+  - Rescisão antecipada do contrato a termo, pelo empregador
+  - Rescisão antecipada do contrato a termo, pelo empregado
+  - Culpa recíproca
+  - Término do contrato a termo (inclui fim da experiência)
+  - Pedido de demissão
+  - Falecimento do empregado
+  - Encerramento da empresa, de filial ou de atividade
+  - Aprendiz: desempenho insuficiente ou inadaptação
+  - Rescisão indireta
+  - Força maior
+  - Acordo entre as partes (reforma trabalhista)
+
+AVISO PRÉVIO CALCULADO PELO SISTEMA
+  Na dispensa sem justa causa: 30 dias + 3 dias por ano completo
+  trabalhado, até 90 dias.
+    Exemplo: 4 anos completos -> 30 + 12 = 42 dias.
+  Nos demais casos com aviso: 30 dias. O valor pode ser ajustado
+  manualmente, com justificativa.
+
+PRAZOS LEGAIS (com aviso antes de vencer)
+  - Pagamento da rescisão: até 10 dias corridos após o término do
+    contrato.
+  - Envio do desligamento ao eSocial: até o 10º dia seguinte.
+
+EXAME DEMISSIONAL
+  Obrigatório, exceto se o último exame ocupacional foi feito há menos
+  de 135 dias (empresas de grau de risco 1 e 2) ou 90 dias (grau 3 e
+  4). Nesse caso, marca-se a dispensa e anexa-se o último exame.
+
+DOCUMENTOS EXIGIDOS PARA CONCLUIR
+  Sempre: termo de rescisão (TRCT) assinado, comprovante de pagamento,
+  exame demissional (ou dispensa), comprovante do FGTS rescisório.
+  Conforme o motivo: pedido de demissão assinado, aviso prévio
+  assinado, termo de acordo, guia de seguro-desemprego, documentos da
+  justa causa, certidão de óbito.
+
+CANCELAMENTO
+  Enquanto o desligamento não for concluído, pode ser cancelado (ex.:
+  empregador reconsiderou o aviso), com justificativa.
+
+CÁLCULO DA RESCISÃO
+  Nesta fase o sistema NÃO calcula os valores da rescisão: registra o
+  valor e guarda o TRCT gerado no sistema de folha do escritório.
+
+4.7 NOTAS FISCAIS (LADO DO ESCRITÓRIO)
+--------------------------------------------------------------------------
+
+  - Consulta as notas de cada empresa por mês, separadas em entradas e
+    saídas, com totais (ver detalhes em 5.3).
+  - Pode enviar XMLs em nome da empresa.
+  - Pode MOVER uma nota para outro mês, com justificativa (ex.: nota
+    emitida em setembro, mas que chegou e foi lançada em outubro). A
+    mudança fica no histórico. A empresa não pode mover notas.
+  - Pode consultar notas de todas as empresas em um mês.
+
+
+==========================================================================
+PARTE 5 - CENÁRIO DA EMPRESA (PORTAL DA EMPRESA)
+==========================================================================
+
+5.1 PRIMEIRO ACESSO
+--------------------------------------------------------------------------
+
+  1. Carla recebe um e-mail de convite da Contabilidade Silva.
+  2. Clica no link, cria sua senha e entra direto no portal da
+     Padaria Pão Quente.
+  3. Se Carla estiver ligada a duas empresas, escolhe em qual quer
+     trabalhar (e pode trocar a qualquer momento).
+
+O conteúdo da tela inicial do portal ainda será definido (ver Parte 9).
+Sugestão: resumo do mês com o que falta enviar, documentos recusados e
+admissões em andamento.
+
+5.2 DOCUMENTOS DO MÊS
+--------------------------------------------------------------------------
+
+  Carla vê a lista de documentos que a padaria deve entregar referente
+  ao mês, com:
+    - nome do documento;
+    - INSTRUÇÕES (o que é e onde obter, escritas pelo escritório);
+    - prazo;
+    - situação (pendente, em avaliação, aceito, recusado, não se
+      aplica) e, se recusado, o MOTIVO.
+
+  O que ela pode fazer:
+    - ENVIAR o arquivo de cada documento. Se o documento tem validade
+      (ex.: certidão), informa a data de validade. O item vira EM
+      AVALIAÇÃO.
+    - Informar "SEM MOVIMENTO", com uma observação, quando não houver
+      o que entregar. O escritório confirma ou recusa.
+    - REENVIAR um documento recusado.
+
+  O que ela NÃO pode fazer:
+    - enviar de novo um documento em avaliação ou já aceito;
+    - enviar documentos de um mês já fechado;
+    - ver tarefas internas do escritório.
+
+  Ela recebe por e-mail: a cobrança diária (Parte 6) e o aviso de cada
+  documento recusado.
+
+5.3 NOTAS FISCAIS
+--------------------------------------------------------------------------
+
+ENVIO
+  - Área "Notas fiscais" no portal.
+  - Carla envia os arquivos XML das notas (o arquivo oficial da nota
+    eletrônica). Pode enviar VÁRIOS de uma vez, inclusive dentro de um
+    arquivo compactado (.zip).
+  - Ela NÃO informa o mês. O sistema descobre sozinho.
+  - Tipos aceitos nesta fase: NF-e (nota fiscal eletrônica) e NFC-e
+    (nota de consumidor), e os arquivos de cancelamento dessas notas.
+
+O QUE O SISTEMA FAZ COM CADA NOTA
+  1. Lê o arquivo e extrai: chave de acesso, número, série, data de
+     emissão, emitente, destinatário, valor total, impostos principais
+     e autorização da SEFAZ.
+  2. Verifica se a nota é da padaria: o CNPJ da padaria (matriz ou
+     filial) precisa ser o emitente ou o destinatário.
+  3. Classifica:
+       SAÍDA ...................... a padaria emitiu (ex.: venda)
+       ENTRADA DE TERCEIROS ....... a padaria recebeu (ex.: compra de
+                                    farinha)
+       ENTRADA DE EMISSÃO PRÓPRIA . a padaria emitiu uma nota de
+                                    entrada (ex.: devolução recebida)
+  4. Coloca a nota no MÊS da data de emissão, considerando o horário
+     de Brasília (nota emitida às 23h30 de 30/09 é de setembro).
+  5. Liga a nota ao item "Notas fiscais de saída/entrada" do mês, que
+     vai para EM AVALIAÇÃO.
+
+  Um mesmo envio pode ter notas de meses diferentes: cada uma vai para
+  o seu mês.
+
+RESULTADO DO ENVIO
+  Ao terminar, Carla vê um resumo:
+    - IMPORTADAS, com o mês de cada uma;
+    - REPETIDAS (já enviadas antes - não são duplicadas);
+    - RECUSADAS, com o motivo:
+        - arquivo inválido ou de tipo não aceito;
+        - nota não autorizada pela SEFAZ;
+        - nota que não é da padaria;
+        - mês da nota já fechado ("fale com o escritório").
+
+CANCELAMENTO
+  Se Carla enviar o arquivo de cancelamento de uma nota, a nota passa
+  a CANCELADA: continua no mês, sinalizada, mas sai dos totais. Se o
+  cancelamento chegar antes da nota, o sistema guarda e aplica quando
+  a nota chegar.
+
+CONSULTA
+  - Por mês, separada em saídas e entradas, com quantidade e valor
+    total (sem contar canceladas).
+  - Filtros: período, entrada/saída, situação, emitente/destinatário,
+    número, chave de acesso, código de operação (CFOP), valor, tipo de
+    nota.
+  - Baixar o XML de uma nota ou todos os XMLs do resultado num .zip
+    (ex.: "todas as notas de saída de setembro").
+
+GUARDA
+  O arquivo original é guardado exatamente como foi recebido e não
+  pode ser alterado nem apagado (tem validade jurídica).
+
+5.4 FUNCIONÁRIOS: PEDIR UMA ADMISSÃO
+--------------------------------------------------------------------------
+
+PASSO 1 - CADASTRAR (RASCUNHO)
+  Carla clica em "Nova admissão" e informa, no mínimo, nome, CPF e
+  data de início prevista do João. A admissão nasce como RASCUNHO. O
+  escritório ainda não a vê.
+
+PASSO 2 - PREENCHER
+  Carla pode salvar e voltar depois quantas vezes quiser.
+
+  Dados pessoais:
+    nome completo, CPF, data de nascimento, sexo, raça/cor, estado
+    civil, escolaridade, país de nascimento, nacionalidade, endereço
+    completo, telefone, e-mail, RG ou CNH, PIS (opcional), nome social
+    (se houver).
+  Dependentes:
+    nome, data de nascimento, parentesco, se é dependente para imposto
+    de renda (então o CPF é obrigatório) e/ou para salário-família.
+  Dados bancários:
+    banco, agência, conta, ou chave Pix.
+  Pessoa com deficiência (se for o caso) e estrangeiro (se for o caso).
+  Dados do contrato:
+    data de início, cargo, salário, tipo de contrato (indeterminado,
+    experiência com os períodos, ou prazo determinado), jornada e
+    horário, local de trabalho (matriz ou filial).
+
+  Documentos (cada um anexado no seu lugar):
+    Sempre: documento com foto, comprovante de residência, exame
+    admissional (ASO), contrato de trabalho assinado.
+    Conforme o caso: certidão de casamento; certidão de nascimento e
+    CPF dos dependentes; cartão de vacinação de filhos até 6 anos e
+    comprovante escolar de filhos de 7 a 14 anos (salário-família);
+    certificado de reservista (homens de 18 a 45 anos).
+    Opcionais: comprovante de escolaridade, título de eleitor, foto.
+
+  O sistema mostra o tempo todo a LISTA DO QUE FALTA.
+  Enquanto está em rascunho, Carla pode desistir e cancelar.
+
+PASSO 3 - SOLICITAR ADMISSÃO
+  - O botão "Solicitar admissão" só é liberado quando não falta nada.
+  - Ao clicar, o sistema confere novamente as regras (idade, datas da
+    experiência, data do exame, salário).
+  - Se a data de início estiver próxima demais, o sistema alerta que
+    pode não haver tempo para o registro legal (a antecedência mínima
+    ainda será decidida - ver Parte 9).
+  - A admissão vira EM ANÁLISE e entra na fila do escritório.
+  - A partir daqui Carla NÃO pode mais alterar nada; só acompanha.
+    Se precisar corrigir algo, pede ao escritório.
+
+PASSO 4 - ACOMPANHAR
+  Carla vê a lista de admissões da padaria com a situação de cada uma
+  (rascunho, em análise, devolvida, admitido, cancelada) e a linha do
+  tempo. Recebe e-mail quando a admissão é:
+    - DEVOLVIDA: vê o motivo e os documentos recusados, corrige e
+      solicita de novo;
+    - CANCELADA;
+    - CONCLUÍDA (ADMITIDO).
+
+5.5 CONSULTAS DA EMPRESA
+--------------------------------------------------------------------------
+
+  - Dados cadastrais da empresa.
+  - Funcionários e seus documentos, inclusive salário e dados
+    bancários (a empresa é a empregadora e é ela quem fornece esses
+    dados).
+  - Documentos que o escritório disponibilizar para a empresa (ex.:
+    guias, relatórios). Documentos internos do escritório nunca
+    aparecem.
+
+5.6 O QUE A EMPRESA NUNCA VÊ
+--------------------------------------------------------------------------
+
+  - Outras empresas do escritório.
+  - Tarefas e anotações internas do escritório.
+  - Configurações do escritório e dados da equipe.
+  - Quem do escritório avaliou cada documento (vê apenas o resultado
+    e o motivo).
+
+
+==========================================================================
+PARTE 6 - O QUE O SISTEMA FAZ SOZINHO
+==========================================================================
+
+6.1 TODO DIA 1º - CRIAÇÃO DO MÊS
+--------------------------------------------------------------------------
+
+  Para cada empresa ativa, o sistema cria o novo mês com a lista de
+  documentos e tarefas da sua rotina. Se a opção "aproveitar documento
+  válido" estiver ligada e houver certidão ainda válida, o item já
+  nasce aceito.
+
+  Meses antigos (anteriores ao uso do sistema) são criados na primeira
+  vez em que alguém os abre.
+
+6.2 TODO DIA, ÀS 8H - COBRANÇA DE DOCUMENTAÇÃO
+--------------------------------------------------------------------------
+
+QUAL MÊS É COBRADO
+  O mês anterior. Em 15/10, cobram-se os documentos de setembro,
+  porque os documentos de um mês são entregues no mês seguinte.
+  Atrasos de meses mais antigos ainda abertos aparecem num bloco
+  separado.
+
+DATA DE CORTE
+  É o dia a partir do qual a cobrança começa.
+
+  Exemplo com data de corte no dia 5 e prazo dos documentos no dia 10:
+
+    01/10 a 04/10 ... nenhuma cobrança
+    05/10 ........... 1ª cobrança: "faltam 3 documentos, prazo dia 10"
+    06/10 a 10/10 ... cobrança diária enquanto houver pendência
+    11/10 em diante . cobrança diária, agora indicando "atrasado há N
+                      dias"
+    No dia em que a empresa envia tudo, a cobrança para.
+
+O QUE É COBRADO
+  Documentos PENDENTES e RECUSADOS. Não são cobrados: os que estão em
+  avaliação, aceitos ou "não se aplica".
+
+O E-MAIL
+  Um único e-mail por empresa por dia, com:
+    - nome da empresa e mês;
+    - cada documento com prazo e situação ("pendente", "atrasado há
+      5 dias", "recusado: documento ilegível");
+    - as instruções de cada documento;
+    - um link direto para a tela de envio no portal.
+
+QUEM RECEBE
+  Todas as pessoas da empresa com acesso ativo ao portal. (Se o
+  escritório poderá escolher destinatários específicos ainda será
+  decidido - ver Parte 9.)
+
+GARANTIAS
+  - Empresa sem pendências não recebe e-mail.
+  - Nunca são enviadas duas cobranças automáticas no mesmo dia para a
+    mesma empresa.
+  - Empresa sem nenhuma pessoa cadastrada no portal não recebe
+    cobrança, e o escritório é alertado ("cobrança não enviada:
+    empresa sem usuário").
+  - Empresas com cobrança suspensa não recebem até a data de retorno.
+  - Todo envio fica no histórico da empresa.
+
+6.3 AVISOS AUTOMÁTICOS
+--------------------------------------------------------------------------
+
+  Para o escritório:
+    - nova admissão solicitada (ou solicitada novamente);
+    - certidão positiva aceita;
+    - documentos aceitos vencidos ou perto de vencer;
+    - prazos legais de admissão, experiência e desligamento perto de
+      vencer;
+    - empresa sem pessoa para receber cobrança;
+    - nota fiscal recusada por mês fechado.
+
+  Para a empresa:
+    - cobrança diária de documentação;
+    - documento recusado;
+    - admissão devolvida, cancelada ou concluída.
+
+
+==========================================================================
+PARTE 7 - SEGURANÇA, PRIVACIDADE E REGRAS LEGAIS
+==========================================================================
+
+ISOLAMENTO
+  - Cada escritório vê apenas os seus dados.
+  - Cada pessoa de empresa vê apenas a(s) sua(s) empresa(s).
+
+NADA É APAGADO
+  Empresas, funcionários, contratos, documentos e notas nunca são
+  apagados de verdade: são desativados, encerrados ou arquivados. A
+  legislação exige a guarda de documentos fiscais e trabalhistas por
+  anos (mínimo de 5 anos para documentos fiscais).
+
+HISTÓRICO DE ALTERAÇÕES
+  Toda criação ou alteração importante fica registrada: quem fez,
+  quando, de onde, o valor anterior e o novo.
+
+DADOS SENSÍVEIS (LGPD)
+  Salário, dados bancários, raça/cor, exames médicos e documentos de
+  justa causa só são vistos por quem tem permissão específica, e cada
+  visualização fica registrada. Na LGPD, o escritório é o
+  "controlador" dos dados e nós (a plataforma) somos o "operador".
+
+SENHAS E ACESSO
+  Ver 2.1. Senhas de certificados digitais e de portais do governo
+  (quando existirem no sistema) são guardadas criptografadas e nunca
+  exibidas.
+
+REGRAS LEGAIS
+  As regras trabalhistas e fiscais deste documento (prazos, idade
+  mínima, aviso prévio, exame demissional, motivos de desligamento)
+  foram levantadas com base na CLT, no eSocial, na Portaria MTP
+  671/2021 e na NR-7. Antes do desenvolvimento de cada módulo, é
+  recomendável que um contador ou advogado trabalhista revise esses
+  pontos.
+
+
+==========================================================================
+PARTE 8 - FORA DA PRIMEIRA FASE
+==========================================================================
+
+Previsto para fases seguintes (algumas regras já estão rascunhadas):
+
+  - Obrigações fiscais e calendário de vencimentos (DAS, DCTFWeb,
+    SPED...).
+  - Honorários do escritório: contratos, reajustes, boletos e Pix.
+  - Certificados digitais das empresas, com alerta de vencimento.
+  - Tarefas avulsas da equipe.
+  - Painel do colaborador.
+  - Novos perfis de colaborador (Fiscal, DP, Financeiro...) e de
+    usuário da empresa (sócio, RH, financeiro...).
+  - Férias, afastamentos e folha de pagamento.
+  - Cálculo da rescisão.
+  - Envio direto ao eSocial pelo sistema.
+  - Aplicativos de celular.
+
+
+==========================================================================
+PARTE 9 - DECISÕES PENDENTES (PARA O LADO NEGOCIAL)
+==========================================================================
+
+Cada item traz a pergunta, por que ela importa e uma sugestão. As
+decisões marcadas com (!) influenciam diretamente o início do
+desenvolvimento ou a forma de vender o produto.
+
+--- PRODUTO E COMERCIAL ---------------------------------------------------
+
+D1 (!) Como um escritório entra no sistema?  (ref. RN-102)
+   Opções: (a) o escritório se cadastra sozinho pela página pública
+   (com ou sem teste grátis); (b) nossa equipe cadastra após a venda.
+   Impacto: define a página pública, o processo de venda e cobrança.
+   Sugestão: começar com (b) e abrir o autocadastro depois.
+
+D2 Conteúdo da página pública  (ref. RN-003)
+   Textos, planos, preços, contato, botão de teste grátis.
+   Depende de D1.
+
+D3 Tela inicial do portal da empresa  (ref. RN-1500)
+   Sugestão: resumo do mês (o que falta, recusados, prazos) e
+   admissões em andamento.
+
+--- EQUIPE E PERMISSÕES ---------------------------------------------------
+
+D4 (!) O que o perfil "Colaborador" pode fazer?  (ref. RN-224)
+   Sugestão: empresas, funcionários, documentos, notas e admissões;
+   sem acesso a dados financeiros do escritório nem a dados sensíveis
+   dos funcionários.
+
+D5 Perfis fixos ou personalizáveis?  (ref. RN-225)
+   (a) nós definimos os perfis; (b) cada escritório cria os seus.
+   Sugestão: (a) na primeira fase.
+
+D6 Colaborador vê todas as empresas ou só a sua carteira?
+   (ref. RN-226)
+   Escritórios maiores costumam dividir empresas entre colaboradores.
+   Sugestão: todas na primeira fase; carteira como evolução.
+
+D7 Mais de um administrador por escritório?  (ref. RN-212)
+   Sugestão: sim (sócios do escritório), mantendo um único titular.
+
+D8 CPF e telefone obrigatórios para usuários?  (ref. RN-203)
+
+D9 Login em duas etapas (código por app/SMS)?  (ref. RN-307)
+   Opções: opcional; obrigatório para administradores; obrigatório
+   para todos. Sugestão: obrigatório para administradores.
+
+D10 A pessoa da empresa pode convidar colegas da própria empresa?
+    (ref. RN-242)  Sugestão: não na primeira fase.
+
+--- EMPRESAS E MÊS DE TRABALHO --------------------------------------------
+
+D11 (!) Ao abrir uma empresa, qual mês aparece?  (ref. RN-600)
+    (a) o mês atual; (b) o mês anterior (em outubro, o normal é
+    trabalhar setembro). Sugestão: (b).
+
+D12 Buscar dados da empresa automaticamente pelo CNPJ?
+    (ref. RN-406)  Sugestão: sim; economiza digitação no cadastro.
+
+D13 (!) Itens do catálogo sugerido  (ref. RN-613)
+    Sugestão: notas de saída, notas de entrada, extratos bancários,
+    comprovantes de despesas, CND Federal, CRF/FGTS, CNDT, CND
+    Estadual, CND Municipal.
+
+D14 Itens trimestrais ou anuais no catálogo?  (ref. RN-614)
+    Nesta fase, todos são mensais.
+
+D15 Tela com todas as empresas em um mês ("quem ainda não entregou as
+    notas de setembro") na primeira versão?  (ref. RN-606)
+    O painel do administrador já cobre parte disso.
+
+D16 Com quanta antecedência avisar sobre certidões vencendo?
+    (ref. RN-626)  Sugestão: 15 dias.
+
+--- COBRANÇA AUTOMÁTICA ---------------------------------------------------
+
+D17 Data de corte padrão  (ref. RN-1311)
+    Sugestão: dia 5.
+
+D18 Cobrança só em dias úteis ou todos os dias? Escritório escolhe o
+    horário?  (ref. RN-1312)
+    Sugestão: só dias úteis, horário fixo às 8h na primeira fase.
+
+D19 Quem da empresa recebe a cobrança?  (ref. RN-1316)
+    (a) todas as pessoas com acesso; (b) o escritório escolhe; (c)
+    incluir o contato responsável mesmo sem acesso ao portal.
+    Sugestão: (a) agora, (b) depois.
+
+--- NOTAS FISCAIS ---------------------------------------------------------
+
+D20 (!) Nota de compra entra no mês da emissão ou da chegada da
+    mercadoria?  (ref. RN-720)
+    Na escrituração fiscal costuma valer a chegada, mas essa data nem
+    sempre está no arquivo. Hoje: emissão, e o escritório move a nota
+    quando necessário.
+
+D21 (!) Incluir NFS-e (notas de serviço) e CT-e (transporte)?
+    (ref. RN-704)
+    Para empresas de serviço, a NFS-e é a principal nota. Sugestão:
+    NFS-e no padrão nacional logo após a primeira entrega.
+
+D22 Guardar os itens de cada nota (produtos, NCM, impostos)?
+    (ref. RN-711)
+    Necessário se o sistema for apurar impostos no futuro.
+
+D23 Gerar o DANFE (PDF da nota) a partir do XML?  (ref. RN-743)
+
+D24 Validar assinatura digital / consultar a SEFAZ?  (ref. RN-715)
+
+D25 Notas anteriores ao início do atendimento: aceitar com alerta ou
+    bloquear?  (ref. RN-723)
+
+D26 Limites de envio (quantidade de arquivos e tamanho)?
+    (ref. RN-701, RN-901)
+
+--- FUNCIONÁRIOS ----------------------------------------------------------
+
+D27 (!) Antecedência mínima para a empresa solicitar a admissão
+    (ref. RN-589)
+    Sugestão: 2 dias úteis antes do início. Bloquear ou só alertar?
+    O escritório pode configurar?
+
+D28 (!) A empresa também solicita desligamentos pelo portal?
+    (ref. RN-578)
+    Sugestão: sim, no mesmo modelo da admissão (empresa solicita,
+    escritório analisa e conclui, devolve o TRCT para assinatura).
+
+D29 Ao concluir a admissão, o escritório gera documentos (contrato de
+    trabalho, ficha de registro) para a empresa assinar e devolver?
+    (ref. RN-599)
+
+D30 Cada escritório pode personalizar a lista de documentos da
+    admissão?  (ref. RN-526)
+    Coerente com o catálogo mensal. Sugestão: sim.
+
+D31 Matrícula do funcionário gerada pelo sistema ou informada?
+    (ref. RN-520)  E quais categorias aceitar (empregado comum e
+    aprendiz)?
+
+D32 Contratos intermitente e temporário nesta fase?  (ref. RN-521)
+
+D33 Salário abaixo do mínimo: alertar ou bloquear?  (ref. RN-524)
+
+D34 Aviso de fim de experiência com quantos dias de antecedência?
+    (ref. RN-522)  Sugestão: 10 dias.
+
+D35 Quem pode reverter um desligamento já concluído?  (ref. RN-548)
+
+D36 O sistema deve calcular a rescisão no futuro?  (ref. RN-549)
+
+D37 Prazos de guarda dos documentos trabalhistas  (ref. RN-563)
+    Até definir, nada é descartado.
+
+--- RELATÓRIOS ------------------------------------------------------------
+
+D38 O colaborador vê os próprios números no relatório de admissões?
+    O relatório pode ser exportado para Excel?  (ref. RN-556)
+    Sugestão: sim para ambos.
+
+
+==========================================================================
+GLOSSÁRIO
+==========================================================================
+
+ASO ............... Atestado de Saúde Ocupacional (exame admissional,
+                    demissional etc.).
+CBO ............... Classificação Brasileira de Ocupações (código do
+                    cargo).
+CFOP .............. Código que identifica o tipo de operação de uma
+                    nota (venda, compra, devolução...).
+Chave de acesso ... Número de 44 dígitos que identifica uma nota
+                    eletrônica.
+CND / CNDT / CRF .. Certidões de regularidade (federal, trabalhista,
+                    FGTS).
+Competência ....... Mês de trabalho de uma empresa (ex.: 09/2026).
+DANFE ............. Versão em PDF/impressa da nota eletrônica.
+eSocial ........... Sistema do governo onde se informam admissões,
+                    desligamentos e demais dados trabalhistas.
+LGPD .............. Lei Geral de Proteção de Dados.
+NF-e / NFC-e ...... Nota fiscal eletrônica / de consumidor eletrônica.
+NFS-e ............. Nota fiscal de serviço eletrônica.
+Portal da empresa . Área do sistema usada pelas empresas clientes.
+Rotina mensal ..... Documentos e tarefas que uma empresa tem todo mês.
+SEFAZ ............. Secretaria da Fazenda, que autoriza as notas.
+TRCT .............. Termo de Rescisão do Contrato de Trabalho.
+XML ............... Arquivo oficial da nota fiscal eletrônica.
+
+==========================================================================

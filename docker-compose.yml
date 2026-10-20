@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    image: contab-admin-app
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:80"
+    volumes:
+      - .:/var/www/html
+      # vendor e node_modules em volumes nomeados: muito mais rápido no Docker Desktop (Windows)
+      - vendor:/var/www/html/vendor
+      - node_modules:/var/www/html/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: America/Sao_Paulo
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-contab}
+      POSTGRES_USER: ${DB_USERNAME:-contab}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-contab}
+      TZ: America/Sao_Paulo
+    ports:
+      - "127.0.0.1:${DB_FORWARD_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-contab} -d ${DB_DATABASE:-contab}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Somente ambiente local (COMPOSE_PROFILES=local no .env). Ver AGENTS.md, seção 2.1.
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    profiles: ["local"]
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
+volumes:
+  pgdata:
+  vendor:
+  node_modules:
