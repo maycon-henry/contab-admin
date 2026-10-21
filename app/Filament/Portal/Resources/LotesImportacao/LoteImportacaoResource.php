@@ -7,29 +7,23 @@ use App\Filament\Compartilhado\RelatorioLote;
 use App\Filament\Portal\Resources\LotesImportacao\Pages\ListLotes;
 use App\Filament\Portal\Resources\LotesImportacao\Pages\ViewLote;
 use App\Models\LoteImportacaoXml;
-use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
-/** Portal — resultado de cada envio de XMLs (RN-703) */
+/** Portal — resultado de cada envio de XMLs (RN-703); fora do menu, acessado pela tela de Notas Fiscais */
 class LoteImportacaoResource extends Resource
 {
     protected static ?string $model = LoteImportacaoXml::class;
 
     protected static ?string $tenantRelationshipName = 'lotesImportacao';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxArrowDown;
-
-    protected static ?int $navigationSort = 3;
-
-    protected static ?string $navigationLabel = 'Envios de XML';
+    protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $modelLabel = 'envio de XML';
 
-    protected static ?string $pluralModelLabel = 'envios de XML';
+    protected static ?string $pluralModelLabel = 'histórico de envios';
 
     protected static ?string $slug = 'envios-xml';
 

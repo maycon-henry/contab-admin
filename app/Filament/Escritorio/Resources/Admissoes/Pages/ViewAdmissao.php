@@ -12,12 +12,15 @@ use App\Actions\Desligamento\CancelarDesligamento;
 use App\Actions\Desligamento\ConcluirDesligamento;
 use App\Domain\Admissao\VerificadorAdmissao;
 use App\Domain\Opcoes;
+use App\Enums\DocumentoAdmissao;
+use App\Enums\MotivoRecusa;
 use App\Enums\Permissao;
 use App\Enums\SituacaoContrato;
 use App\Filament\Compartilhado\Concerns\VoltaParaOrigem;
 use App\Filament\Escritorio\Resources\Admissoes\AdmissaoResource;
 use App\Filament\Support\Acao;
 use App\Models\Contrato;
+use App\Models\Documento;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -27,9 +30,11 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\HtmlString;
 
@@ -71,12 +76,36 @@ class ViewAdmissao extends ViewRecord
                 ->requiresConfirmation()->modalDescription('Você passa a ser o responsável e fica registrado que iniciou o atendimento (RN-592).')
                 ->action(fn (Action $a) => Acao::rodar(fn () => app(AssumirAdmissao::class)->executar($c, $user), 'Admissão assumida.', $a) && $recarregar()),
 
-            // RN-595 — devolver à empresa
+            // RN-593 / RN-595 — devolver à empresa, marcando os documentos com problema
             Action::make('devolver')->label('Devolver à empresa')->icon('heroicon-o-arrow-uturn-left')->color('warning')
                 ->visible($c->situacao === SituacaoContrato::EmAnalise && $c->responsavel_id)
-                ->schema([Textarea::make('motivo')->label('Motivo (a empresa verá este texto)')->required()->rows(3)
-                    ->default(fn () => $c->documentos()->where('avaliacao', 'recusado')->get()->map(fn ($d) => "{$d->tipo}: {$d->motivo_recusa}")->implode("\n"))])
-                ->action(fn (array $data, Action $a) => Acao::rodar(fn () => app(DevolverAdmissao::class)->executar($c, $user, $data['motivo']), 'Admissão devolvida. A empresa foi avisada.', $a) && $recarregar()),
+                ->modalHeading('Devolver à empresa')->modalWidth('3xl')
+                ->modalDescription('Marque os documentos com problema e diga o motivo de cada um. A empresa verá o documento destacado em vermelho, com o motivo, e poderá trocar o arquivo.')
+                ->fillForm(fn () => ['documentos' => $c->documentos()->where('substituido', false)->get()
+                    ->mapWithKeys(fn (Documento $d) => [$d->id => ['recusar' => $d->avaliacao === 'recusado', 'motivo' => null, 'complemento' => $d->motivo_recusa]])->all()])
+                ->schema(fn () => [
+                    ...$c->documentos()->where('substituido', false)->orderBy('tipo')->get()->map(fn (Documento $d) => Grid::make(3)->schema([
+                        Toggle::make("documentos.{$d->id}.recusar")->live()->inline(false)
+                            ->label(DocumentoAdmissao::tryFrom((string) $d->tipo)?->getLabel() ?? $d->tipo)
+                            ->helperText(new HtmlString('<a href="'.e($d->urlTemporaria()).'" target="_blank" style="text-decoration:underline">'.e($d->nome_original).'</a>'
+                                .($d->avaliacao === 'aceito' ? ' — aceito' : ''))),
+                        Select::make("documentos.{$d->id}.motivo")->label('Motivo')->options(MotivoRecusa::opcoesParaAdmissao())
+                            ->visible(fn (Get $get) => (bool) $get("documentos.{$d->id}.recusar"))
+                            ->required(fn (Get $get) => (bool) $get("documentos.{$d->id}.recusar") && blank($get("documentos.{$d->id}.complemento"))),
+                        TextInput::make("documentos.{$d->id}.complemento")->label('Detalhe (a empresa verá)')
+                            ->placeholder('Ex.: comprovante com mais de 90 dias')
+                            ->visible(fn (Get $get) => (bool) $get("documentos.{$d->id}.recusar")),
+                    ]))->all(),
+                    Textarea::make('motivo')->label('Observação geral (opcional)')->rows(2)
+                        ->helperText('Use para o que não é de um documento específico, ex.: dado pessoal errado.'),
+                ])
+                ->action(fn (array $data, Action $a) => Acao::rodar(fn () => app(DevolverAdmissao::class)->executar($c, $user, $data['motivo'] ?? null,
+                    collect($data['documentos'] ?? [])->filter(fn ($d) => $d['recusar'] ?? false)
+                        ->map(fn ($d) => trim(collect([
+                            filled($d['motivo'] ?? null) ? MotivoRecusa::from($d['motivo'] instanceof MotivoRecusa ? $d['motivo']->value : $d['motivo'])->getLabel() : null,
+                            $d['complemento'] ?? null,
+                        ])->filter()->implode(' — ')))->all(),
+                ), 'Admissão devolvida. A empresa foi avisada.', $a) && $recarregar()),
 
             // RN-597 / RN-598 — concluir
             Action::make('concluir')->label('Concluir admissão')->icon('heroicon-o-check-badge')->color('success')

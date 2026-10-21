@@ -20,13 +20,13 @@ use App\Actions\Itens\EnviarDocumentosDoItem;
 use App\Actions\Itens\InformarSemMovimento;
 use App\Actions\Itens\RecusarItem;
 use App\Actions\NotasFiscais\ImportarLoteXml;
-use App\Actions\Usuarios\DefinirPerfis;
+use App\Actions\Usuarios\DefinirAtribuicoes;
 use App\Domain\Competencia as Mes;
 use App\Domain\DocumentoFiscal;
 use App\Enums\AplicacaoTipoDocumento;
+use App\Enums\Atribuicao;
 use App\Enums\DocumentoAdmissao;
 use App\Enums\MotivoRecusa;
-use App\Enums\Perfil;
 use App\Enums\RegimeTributario;
 use App\Enums\ResultadoCertidao;
 use App\Enums\SituacaoEmpresa;
@@ -36,6 +36,7 @@ use App\Enums\TipoContrato;
 use App\Enums\TipoItem;
 use App\Enums\TipoUsuario;
 use App\Models\Acesso;
+use App\Models\CategoriaDespesa;
 use App\Models\Competencia;
 use App\Models\Contrato;
 use App\Models\Empresa;
@@ -60,6 +61,9 @@ use RuntimeException;
 class DesenvolvimentoSeeder extends Seeder
 {
     private const SENHA = '123';
+
+    /** Atribuições padrão do colaborador de exemplo: o trabalho operacional (empresas, admissões, documentos, notas). */
+    private const ATRIBUICOES_OPERACIONAL = [Atribuicao::Empresas, Atribuicao::UsuariosPortal, Atribuicao::Admissoes, Atribuicao::Documentos, Atribuicao::NotasFiscais];
 
     private Escritorio $escritorio;
 
@@ -114,20 +118,20 @@ class DesenvolvimentoSeeder extends Seeder
             'dia_corte_cobranca' => 5,
         ]);
 
-        app(DefinirPerfis::class)->garantirNoEscritorio($this->escritorio->id);
+        app(DefinirAtribuicoes::class)->garantirNoEscritorio($this->escritorio->id);
     }
 
     private function criarEquipe(): void
     {
         $this->admin = $this->usuario('Maria Administradora', 'admin@contab.test', TipoUsuario::Administrador, titular: true);
         $this->bruno = $this->usuario('Bruno Colaborador', 'colaborador@contab.test', TipoUsuario::Colaborador);
-        $this->daniela = $this->usuario('Daniela Souza', 'daniela@contab.test', TipoUsuario::Colaborador, perfis: [Perfil::Operacional, Perfil::Financeiro]);
+        $this->daniela = $this->usuario('Daniela Souza', 'daniela@contab.test', TipoUsuario::Colaborador, atribuicoes: Atribuicao::cases()); // todas as atribuições
         $this->usuario('Fernanda Lima', 'fernanda@contab.test', TipoUsuario::Administrador);
         // convite ainda não aceito — para ver "Reenviar convite"
-        $this->usuario('Eduardo Ramos', 'eduardo@contab.test', TipoUsuario::Colaborador, conviteAceito: false, perfis: [Perfil::Financeiro]);
+        $this->usuario('Eduardo Ramos', 'eduardo@contab.test', TipoUsuario::Colaborador, conviteAceito: false, atribuicoes: [Atribuicao::Cobranca, Atribuicao::Despesas]);
     }
 
-    private function usuario(string $nome, string $email, TipoUsuario $tipo, bool $titular = false, bool $conviteAceito = true, ?Escritorio $escritorio = null, array $perfis = [Perfil::Operacional]): User
+    private function usuario(string $nome, string $email, TipoUsuario $tipo, bool $titular = false, bool $conviteAceito = true, ?Escritorio $escritorio = null, ?array $atribuicoes = null): User
     {
         $escritorio ??= $this->escritorio;
 
@@ -148,7 +152,7 @@ class DesenvolvimentoSeeder extends Seeder
         }
 
         if ($tipo === TipoUsuario::Colaborador) {
-            app(DefinirPerfis::class)->executar($user, $perfis);
+            app(DefinirAtribuicoes::class)->executar($user, $atribuicoes ?? self::ATRIBUICOES_OPERACIONAL);
         }
 
         return $user;
@@ -231,6 +235,13 @@ class DesenvolvimentoSeeder extends Seeder
                 'municipio' => 'São Paulo', 'uf' => 'SP', 'telefone' => '(11) 3000-'.substr($base8, -4), 'email' => "contato@{$chave}.test",
                 'contato_nome' => $socios[$chave][0][0], 'contato_cpf' => $this->cpf(), 'contato_email' => "financeiro@{$chave}.test",
                 'classificacao_tributaria' => $classificacao,
+                // RN-1200 — honorário acordado (a vigência começa no início do atendimento)
+                'honorario_valor' => match ($regime) {
+                    RegimeTributario::SimplesNacional => 850,
+                    RegimeTributario::LucroPresumido => 1800,
+                    default => 3500,
+                },
+                'honorario_dia_vencimento' => 10,
             ]);
 
             $empresa->estabelecimentos()->create([
@@ -376,7 +387,13 @@ class DesenvolvimentoSeeder extends Seeder
             return;
         }
 
-        $this->enviar($item, $enviante, validade: $item->exige_validade ? today()->addDays(120) : null);
+        $certidao = $item->eh_certidao ? ($positiva ? ResultadoCertidao::Positiva : ResultadoCertidao::Negativa) : null;
+        $this->enviar($item, $enviante, validade: $item->exige_validade ? today()->addDays(120) : null, certidao: $certidao);
+
+        if ($enviante->ehDaEquipe()) {
+            return; // enviado pelo escritório: já aceito (RN-646)
+        }
+
         $item->refresh();
 
         if ($recusar) {
@@ -385,16 +402,13 @@ class DesenvolvimentoSeeder extends Seeder
             return;
         }
 
-        app(AceitarItem::class)->executar(
-            $item, $this->bruno, $item->validade?->toDateString(),
-            $item->eh_certidao ? ($positiva ? ResultadoCertidao::Positiva : ResultadoCertidao::Negativa) : null,
-        );
+        app(AceitarItem::class)->executar($item, $this->bruno, $item->validade?->toDateString(), $certidao);
     }
 
-    private function enviar(ItemCompetencia $item, User $enviante, $validade = null): void
+    private function enviar(ItemCompetencia $item, User $enviante, $validade = null, ?ResultadoCertidao $certidao = null): void
     {
         $caminho = $this->pdfDeExemplo("escritorios/{$item->escritorio_id}/empresas/{$item->empresa_id}/documentos", Str::slug($item->nome));
-        app(EnviarDocumentosDoItem::class)->executar($item, $enviante, [$caminho => Str::slug($item->nome).'.pdf'], $validade?->toDateString());
+        app(EnviarDocumentosDoItem::class)->executar($item, $enviante, [$caminho => Str::slug($item->nome).'.pdf'], $validade?->toDateString(), $certidao);
     }
 
     // ------------------------------------------------------------------ notas fiscais (seção 10)
@@ -597,18 +611,23 @@ class DesenvolvimentoSeeder extends Seeder
         }
     }
 
-    /** regras.md seção 19 — 5 despesas de exemplo em cada empresa. */
+    /** regras.md seção 19 — 5 despesas de exemplo em cada empresa, cada uma na sua categoria (RN-1609). */
     private function criarDespesas(): void
     {
+        $categorias = collect(['Aluguel', 'Energia e utilidades', 'Telefonia e internet', 'Fornecedores', 'Serviços contábeis', 'Impostos e taxas'])
+            ->mapWithKeys(fn ($nome) => [$nome => CategoriaDespesa::create(['escritorio_id' => $this->escritorio->id, 'nome' => $nome])->id]);
+
         $modelos = [
-            ['Aluguel do imóvel', 4500, 5], ['Conta de energia elétrica', 870.45, 12], ['Internet e telefonia', 289.90, 15],
-            ['Fornecedor de materiais', 2350, 20], ['Honorários contábeis', 1200, 10],
+            ['Aluguel do imóvel', 4500, 5, 'Aluguel'], ['Conta de energia elétrica', 870.45, 12, 'Energia e utilidades'],
+            ['Internet e telefonia', 289.90, 15, 'Telefonia e internet'], ['Fornecedor de materiais', 2350, 20, 'Fornecedores'],
+            ['Honorários contábeis', 1200, 10, 'Serviços contábeis'],
         ];
 
         foreach ($this->empresas as $empresa) {
-            foreach ($modelos as [$descricao, $valor, $dia]) {
+            foreach ($modelos as [$descricao, $valor, $dia, $categoria]) {
                 app(SalvarDespesa::class)->criar($empresa, $this->admin, [
-                    'descricao' => $descricao, 'valor' => $valor, 'data_vencimento' => today()->startOfMonth()->addDays($dia - 1)->toDateString(),
+                    'descricao' => $descricao, 'valor' => $valor, 'categoria_despesa_id' => $categorias[$categoria],
+                    'data_vencimento' => today()->startOfMonth()->addDays($dia - 1)->toDateString(),
                 ]);
             }
         }

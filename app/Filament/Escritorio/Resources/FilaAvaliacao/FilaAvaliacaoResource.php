@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 /** regras.md RN-657 — fila de avaliação de documentos de todas as empresas */
@@ -64,8 +65,10 @@ class FilaAvaliacaoResource extends Resource
                 TextColumn::make('enviado_em')->label('Enviado em')->dateTime('d/m/Y H:i')->sortable()->placeholder('—'),
                 TextColumn::make('empresa.razao_social')->label('Empresa')->searchable(),
                 TextColumn::make('competencia.competencia')->label('Competência')->date('m/Y'),
-                TextColumn::make('nome')->label('Documento')->searchable()
-                    ->description(fn (ItemCompetencia $record) => $record->sem_movimento ? 'Sem movimento informado: '.$record->observacao_empresa : null),
+                // nome e observação cortados em 30 caracteres para a fila caber na tela; o texto inteiro fica no tooltip
+                TextColumn::make('nome')->label('Documento')->searchable()->limit(30)
+                    ->description(fn (ItemCompetencia $record) => $record->sem_movimento ? Str::limit('Sem movimento: '.$record->observacao_empresa, 30) : null)
+                    ->tooltip(fn (ItemCompetencia $record) => $record->nome.($record->sem_movimento ? ' — sem movimento informado: '.$record->observacao_empresa : '')),
                 TextColumn::make('prazo')->label('Prazo')->date('d/m/Y'),
                 TextColumn::make('situacao')->label('Situação')->badge(),
             ])

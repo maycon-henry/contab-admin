@@ -10,6 +10,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -31,12 +32,11 @@ final class TabelaNotas
                 $mostrarEmpresa ? TextColumn::make('empresa.razao_social')->label('Empresa')->searchable()->toggleable() : null,
                 $mostrarCompetencia ? TextColumn::make('competencia')->label('Competência')->date('m/Y')->sortable() : null,
                 TextColumn::make('numero')->label('Número')->searchable()->description(fn (NotaFiscal $r) => 'Série '.$r->serie.' · '.($r->modelo === '65' ? 'NFC-e' : 'NF-e')),
-                TextColumn::make('data_emissao')->label('Emissão')->dateTime('d/m/Y H:i')->sortable(),
+                TextColumn::make('data_emissao')->label('Emissão')->date('d/m/Y')->sortable(),
                 TextColumn::make('classificacao')->label('Classificação')->badge(),
                 TextColumn::make('contraparte')->label('Emitente / destinatário')
                     ->state(fn (NotaFiscal $r) => $r->classificacao === ClassificacaoNota::EntradaTerceiros ? $r->emitente_nome : ($r->destinatario_nome ?? 'Consumidor'))
                     ->description(fn (NotaFiscal $r) => DocumentoFiscal::formatar($r->classificacao === ClassificacaoNota::EntradaTerceiros ? $r->emitente_documento : $r->destinatario_documento)),
-                TextColumn::make('cfops')->label('CFOP')->badge()->separator(',')->toggleable(),
                 TextColumn::make('valor_total')->label('Valor')->money('BRL')->sortable()
                     ->summarize(Sum::make()->label('Total (sem canceladas)')->money('BRL')
                         ->query(fn ($query) => $query->where('situacao', SituacaoNota::Autorizada->value))),
@@ -74,6 +74,9 @@ final class TabelaNotas
                     ->when($data['max'] ?? null, fn ($q, $v) => $q->where('valor_total', '<=', $v))),
             ])
             ->recordActions([
+                // RN-743 — ver a nota (DANFE/DANFCE) montada a partir do XML, em nova aba
+                Action::make('danfe')->label('Ver nota')->icon('heroicon-o-eye')->color('primary')
+                    ->url(fn (NotaFiscal $record) => route('notas.danfe', $record))->openUrlInNewTab(),
                 Action::make('xml')->label('XML')->icon('heroicon-o-arrow-down-tray')->color('gray')
                     ->action(fn (NotaFiscal $record) => Storage::disk(NotaFiscal::DISCO)->download($record->arquivo, $record->chave_acesso.'.xml')),
             ])
@@ -83,6 +86,24 @@ final class TabelaNotas
                     ->action(fn (Collection $records) => self::baixarZip($records)),
             ])
             ->defaultSort('data_emissao', 'desc');
+    }
+
+    /**
+     * Abas "Todas / Entrada / Saída" acima da lista (RN-716): entrada reúne terceiros e emissão própria.
+     *
+     * @return array<string, Tab>
+     */
+    public static function abas(): array
+    {
+        $entradas = [ClassificacaoNota::EntradaTerceiros, ClassificacaoNota::EntradaPropria];
+
+        return [
+            'todas' => Tab::make('Todas'),
+            'entrada' => Tab::make('Entrada')->icon('heroicon-o-arrow-down-tray')
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('classificacao', $entradas)),
+            'saida' => Tab::make('Saída')->icon('heroicon-o-arrow-up-tray')
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('classificacao', ClassificacaoNota::Saida)),
+        ];
     }
 
     public static function baixarZip(Collection $notas)

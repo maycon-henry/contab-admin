@@ -29,10 +29,11 @@ SaaS para **escritórios de contabilidade** gerenciarem suas **empresas clientes
 | **Escritório** | O escritório contábil que assina o sistema (tenant). |
 | **Usuário** | Pessoa que acessa o sistema em nome de um escritório. |
 | **Administrador** | Usuário com acesso total ao seu escritório. |
-| **Colaborador** | Usuário da equipe do escritório com acesso limitado pelo seu perfil. |
+| **Colaborador** | Usuário da equipe do escritório com acesso limitado pelas suas atribuições. |
 | **Usuário da empresa** | Pessoa da empresa cliente que acessa o sistema pelo portal da empresa, restrita à(s) sua(s) empresa(s). |
 | **Portal da empresa** | Área do sistema usada pelos usuários das empresas clientes. |
-| **Perfil** | Conjunto de permissões atribuído a um colaborador. |
+| **Atribuição** | Área de trabalho que o colaborador exerce no escritório (ex.: admissões, despesas), com as permissões correspondentes. Um colaborador pode ter várias. |
+| **Perfil** | Conjunto de permissões de um usuário da empresa (RN-245). Na equipe do escritório foi substituído pelas atribuições. |
 | **Permissão** | Autorização para uma ação específica (ex.: cadastrar empresa cliente). |
 | **Empresa cliente** | Empresa atendida pelo escritório. |
 | **Sócio** | Pessoa física ou jurídica que integra o quadro societário de uma empresa cliente. |
@@ -74,13 +75,13 @@ SaaS para **escritórios de contabilidade** gerenciarem suas **empresas clientes
 - **RN-103** — Situações do escritório: `ativo`, `suspenso`, `cancelado`. Usuários de escritório `suspenso` ou `cancelado` não conseguem entrar no sistema e recebem mensagem explicando o motivo genérico ("acesso do escritório suspenso, contate o administrador").
 - **RN-104** — Todo escritório tem, desde a sua criação, exatamente um **administrador titular**.
 
-## 5. Usuários e perfis
+## 5. Usuários e atribuições
 
 ### 5.1 Tipos de usuário
 
 - **RN-200** — Nesta fase existem três tipos de usuário:
-  - **Administrador** (equipe do escritório) — acesso total ao seu escritório: todos os módulos, gestão de usuários, perfis e configurações.
-  - **Colaborador** (equipe do escritório) — acesso definido pelas permissões do seu perfil.
+  - **Administrador** (equipe do escritório) — acesso total ao seu escritório: todos os módulos, gestão de usuários, atribuições e configurações.
+  - **Colaborador** (equipe do escritório) — acesso definido pelas suas atribuições (seção 5.3).
   - **Usuário da empresa** (cliente do escritório) — acesso restrito aos dados da(s) empresa(s) cliente(s) a que está vinculado (seção 5.5).
 - **RN-201** — Um usuário pertence a um único escritório.
 - **RN-202** — Todo usuário tem e-mail único na plataforma (não pode repetir nem entre escritórios diferentes).
@@ -93,26 +94,39 @@ SaaS para **escritórios de contabilidade** gerenciarem suas **empresas clientes
 - **RN-212** — **[A DEFINIR]** se o escritório pode ter mais de um administrador além do titular.
 - **RN-213** — Um administrador não pode desativar a si mesmo.
 
-### 5.3 Colaborador e perfis
+### 5.3 Colaborador e atribuições
 
-- **RN-220** — Todo colaborador tem **um ou mais perfis**. Quem acumula perfis (ex.: Operacional e Financeiro) tem a soma das permissões de cada um. O administrador não tem perfis: já tem acesso total.
-- **RN-221** — Perfis desta fase: **Operacional** (antigo "Colaborador") e **Financeiro**. O sistema deve estar preparado para novos perfis (ex.: Contador, Analista Fiscal, Departamento Pessoal) sem alteração nas regras de autorização já existentes — basta criar o perfil e atribuir permissões.
+- **RN-220** — Não há perfis fixos de colaborador: o administrador marca, para cada colaborador, as **atribuições** que ele exerce (ex.: Bruno faz admissões; Eduardo cuida do financeiro e das despesas; Daniela faz tudo). Todo colaborador tem **ao menos uma** atribuição, e suas permissões são a soma das permissões de cada atribuição marcada. O administrador não tem atribuições: já tem acesso total.
+- **RN-221** — Atribuições desta fase (o catálogo é da plataforma; novas atribuições entram sem alterar as regras de autorização já existentes):
+
+  | Atribuição | O que permite |
+  |---|---|
+  | Cadastro de empresas | cadastrar e alterar empresas clientes |
+  | Usuários do portal | convidar e gerenciar usuários das empresas (RN-242) |
+  | Admissões e desligamentos | fila de admissões, análise, conclusão e desligamentos (seção 8) |
+  | Dados sensíveis de funcionários | ver os dados de RN-570 |
+  | Avaliação de documentos | avaliar documentos, enviar documentos em nome da empresa (RN-646) e concluir tarefas da rotina mensal |
+  | Catálogo de documentos | gerenciar o catálogo do escritório (RN-611) |
+  | Reabrir competência | reabrir competências fechadas (RN-633) |
+  | Notas fiscais | enviar XMLs em nome da empresa e mover notas de competência (RN-700, RN-722) |
+  | Financeiro (cobrança de documentação) | cobranças de documentação (seção 16.1) |
+  | Despesas | despesas das empresas e seus pagamentos (seção 19) |
+  | Relatórios | relatório de admissões por colaborador (RN-556) |
+
+  O formulário tem a opção "marcar todas", para o colaborador que faz de tudo.
 - **RN-222** — Permissões são definidas por módulo e ação (ex.: empresas clientes → visualizar, cadastrar, editar, encerrar). O catálogo de permissões é definido pela plataforma.
-- **RN-223** — Permissões exclusivas do administrador, que **nunca** podem ser atribuídas a um perfil de colaborador: gerenciar usuários, gerenciar perfis, alterar dados e configurações do escritório.
-- **RN-224** — Permissões de cada perfil (nenhum deles vê dados sensíveis de funcionários — RN-570):
-  - **Operacional:** consultar e cadastrar empresas, usuários do portal, funcionários (admissões e desligamentos), avaliar documentos, rotina mensal e notas fiscais.
-  - **Financeiro:** consultar empresas e notas fiscais, gerenciar despesas das empresas (seção 19) e cobranças de documentação (seção 16.1).
-  - **[A DEFINIR]** confirmar a divisão acima com o negócio.
-- **RN-225** — **[A DEFINIR]** se os perfis serão fixos (definidos pela plataforma) ou se cada escritório poderá criar e editar seus próprios perfis.
+- **RN-223** — Permissões exclusivas do administrador, que **nunca** fazem parte de uma atribuição: gerenciar usuários da equipe e suas atribuições, alterar dados e configurações do escritório. O dashboard do administrador (RN-1500) e o histórico de acessos (RN-331) também continuam só do administrador.
+- **RN-224** — Todo colaborador, qualquer que seja a atribuição, **consulta** as empresas clientes e as notas fiscais.
+- **RN-225** — As atribuições são as mesmas para todos os escritórios (definidas pela plataforma); cada escritório escolhe quais marcar para cada colaborador.
 - **RN-226** — **[A DEFINIR]** se o colaborador terá acesso a todas as empresas clientes ou somente às da sua carteira.
 
 ### 5.4 Gestão de usuários
 
 - **RN-230** — Somente administradores cadastram, editam, ativam e desativam usuários da **equipe do escritório** (administradores e colaboradores). Usuários das empresas clientes seguem RN-242.
-- **RN-231** — Novos usuários são adicionados por **convite**: o administrador informa nome, e-mail, tipo e perfil; o convidado recebe e-mail com link para definir a própria senha. O administrador nunca define nem vê a senha de outro usuário.
+- **RN-231** — Novos usuários são adicionados por **convite**: o administrador informa nome, e-mail, tipo e atribuições; o convidado recebe e-mail com link para definir a própria senha. O administrador nunca define nem vê a senha de outro usuário.
 - **RN-232** — O link de convite expira em **7 dias** e pode ser reenviado pelo administrador; reenviar invalida o link anterior.
 - **RN-233** — Usuário nunca é excluído fisicamente; é desativado. Desativar revoga imediatamente todas as sessões e tokens (web e app) e bloqueia novos logins.
-- **RN-234** — Alterar o perfil ou o tipo de um usuário passa a valer imediatamente, inclusive para sessões já abertas.
+- **RN-234** — Alterar as atribuições ou o tipo de um usuário passa a valer imediatamente, inclusive para sessões já abertas.
 
 ### 5.5 Usuários das empresas clientes
 
@@ -125,9 +139,10 @@ SaaS para **escritórios de contabilidade** gerenciarem suas **empresas clientes
   - enviar os XMLs das notas fiscais e consultar suas notas (seção 10);
   - enviar documentos dos itens da competência (despesas, extratos, certidões — seção 9.7);
   - cadastrar funcionários ("Admitir novo", na tela de Funcionários) e enviar seus dados e documentos de admissão (seção 8.3); depois de admitido, apenas trocar documentos (RN-565);
-  - consultar os funcionários da empresa e seus documentos.
+  - consultar os funcionários da empresa e seus documentos;
+  - cadastrar as despesas da empresa e registrar seus pagamentos (RN-1607).
 - **RN-244** — O usuário da empresa **não** acessa: outras empresas, tarefas e anotações internas do escritório, configurações do escritório, usuários da equipe.
-- **RN-245** — O sistema deve estar preparado para perfis diferentes de usuário da empresa no futuro (ex.: sócio, RH, financeiro), seguindo o mesmo modelo de perfis e permissões da seção 5.3.
+- **RN-245** — O sistema deve estar preparado para perfis diferentes de usuário da empresa no futuro (ex.: sócio, RH, financeiro), seguindo o mesmo modelo de permissões da seção 5.3.
 - **RN-246** — Desvincular o usuário de uma empresa remove o acesso a ela imediatamente. Ao desvincular a última empresa, o usuário é desativado (RN-233).
 
 ## 6. Autenticação
@@ -265,7 +280,7 @@ Visão geral:
 
 - **RN-593** — Na análise, o colaborador confere os dados e **cada documento** do checklist, marcando-o como `aceito` ou `recusado` (com motivo).
 - **RN-594** — O colaborador pode corrigir pequenos erros nos dados informados pela empresa sem devolver a admissão. Toda correção fica registrada no histórico (valor anterior, novo valor, quem e quando) e visível para a empresa.
-- **RN-595** — Se houver documento recusado ou dado que só a empresa pode corrigir, o colaborador **devolve** a admissão informando o motivo. Ela passa a `devolvida`; a empresa vê o motivo e os documentos recusados, volta a poder editar, e solicita novamente (RN-586). Na nova solicitação, a admissão volta à fila **mantendo o mesmo responsável**.
+- **RN-595** — Se houver documento recusado ou dado que só a empresa pode corrigir, o colaborador **devolve** a admissão informando o motivo. Na própria tela de devolução ele marca os documentos com problema, cada um com o motivo (ilegível, diferente do solicitado, vencido ou desatualizado, incompleto, outro) e um detalhe opcional (ex.: "comprovante com mais de 90 dias"); esses documentos ficam recusados e a lista deles entra no motivo da devolução. Ela passa a `devolvida`; a empresa vê o motivo e os documentos recusados, volta a poder editar, e solicita novamente (RN-586). Na nova solicitação, a admissão volta à fila **mantendo o mesmo responsável**.
 - **RN-596** — Uma admissão `em_analise` pode ser cancelada pelo escritório (ex.: candidato desistiu), com justificativa. A empresa pode pedir o cancelamento, mas quem executa é o escritório.
 
 #### Etapa 5 — Concluir a admissão (escritório)
@@ -360,7 +375,7 @@ Visão geral:
 - **RN-561** — Formatos aceitos conforme RN-901.
 - **RN-562** — Substituir um documento mantém a versão anterior no histórico.
 - **RN-563** — **[A DEFINIR]** tabela de prazos de guarda dos documentos trabalhistas. Até que seja definida, nenhum documento de funcionário pode ser descartado.
-- **RN-565** — Depois da admissão concluída, a **empresa não altera os dados do funcionário** (pessoais, contrato, dependentes, bancários): quem atualiza é o escritório (perfil Operacional). A empresa pode apenas **trocar ou incluir documentos** do funcionário, pela opção "Atualizar cadastro" da tela de Funcionários do portal. Durante a admissão (`rascunho` ou `devolvida`) a empresa continua preenchendo o formulário completo (RN-582).
+- **RN-565** — Depois da admissão concluída, a **empresa não altera os dados do funcionário** (pessoais, contrato, dependentes, bancários): quem atualiza é o escritório (atribuição "Admissões e desligamentos"). A empresa pode apenas **trocar ou incluir documentos** do funcionário, pela opção "Atualizar cadastro" da tela de Funcionários do portal. Durante a admissão (`rascunho` ou `devolvida`) a empresa continua preenchendo o formulário completo (RN-582).
 - **RN-566** — Na troca, um documento nunca é removido: o novo arquivo vira a versão vigente e a anterior fica no histórico (RN-562).
 - **RN-567** — Todo documento trocado ou incluído pela empresa em funcionário admitido fica **em análise** até alguém do Operacional **aceitar ou recusar** (com motivo) na ficha do funcionário. Enquanto isso, ele aparece nas ações pendentes da Página da Empresa (RN-1521), e a empresa vê a situação de cada documento ("em análise", "aceito" ou "recusado" com o motivo). Envio e avaliação ficam na linha do tempo (RN-575).
 - **RN-564** — Além do arquivo, o ASO tem seus dados registrados (base: NR-7): tipo de exame (admissional, periódico, retorno ao trabalho, mudança de risco ocupacional, demissional), data do exame, resultado (apto/inapto), médico responsável (nome, CRM e UF), riscos ocupacionais e procedimentos realizados. Esses dados alimentam RN-527 e RN-545.
@@ -482,6 +497,7 @@ Cada escritório decide **quais documentos exige** das suas empresas. Um escrit�
 - **RN-643** — Item `recusado` volta a aceitar envio; o reenvio leva o item novamente a `em_avaliacao`. Item `em_avaliacao` ou `aceito` não aceita novo envio pela empresa.
 - **RN-644** — Em competência fechada (RN-632), a empresa não consegue enviar documentos.
 - **RN-645** — A empresa é lembrada dos itens próximos do prazo, atrasados e recusados. Os lembretes são feitos pela cobrança diária de documentação (seção 16.1).
+- **RN-646** — **Envio pelo escritório:** o escritório também pode enviar o documento de um item `pendente` ou `recusado` em nome da empresa (ex.: documento recebido por e-mail), pelo menu **"Documentos"** da empresa (lista dos documentos do mês, por competência, com os que a empresa enviou para avaliar ali mesmo) ou pelo botão de envio das ações pendentes da Página da Empresa. Quem envia precisa da permissão de avaliar documentos (RN-650). Como o próprio escritório conferiu o documento, o item **já passa a `aceito`**, sem ir para a fila de avaliação; as exigências do aceite continuam valendo (validade não vencida — RN-652; resultado da certidão — RN-653), e o aceite fica registrado no histórico de avaliações em nome de quem enviou (RN-655).
 
 ## 10. Notas fiscais (importação de XML)
 
@@ -546,7 +562,7 @@ A empresa envia os **arquivos XML** das suas notas fiscais. O sistema lê cada X
 - **RN-740** — A consulta de notas parte da **competência**: na área de trabalho (seção 9), a aba "Notas fiscais" mostra as notas da empresa na competência selecionada, separadas em saídas e entradas.
 - **RN-741** — Filtros: competência (ou período de emissão), classificação (saída/entrada), situação (autorizada/cancelada), emitente/destinatário (CNPJ ou nome), número, chave de acesso, CFOP, faixa de valor, modelo (NF-e/NFC-e).
 - **RN-742** — Totais da consulta: quantidade de notas e soma do valor total, separados por saídas e entradas, desconsiderando notas canceladas.
-- **RN-743** — Ações sobre o resultado: baixar o XML de uma nota e **baixar todos os XMLs do resultado em um `.zip`** (ex.: todas as notas de saída de 09/2026). **[A DEFINIR]** geração do DANFE (PDF) a partir do XML.
+- **RN-743** — Ações sobre o resultado: baixar o XML de uma nota e **baixar todos os XMLs do resultado em um `.zip`** (ex.: todas as notas de saída de 09/2026). Ao lado do XML, o botão **"Ver nota"** abre em nova aba o **DANFE** (NF-e) ou a **DANFCE** (NFC-e) em PDF, montado a partir do XML guardado; nota cancelada sai marcada como cancelada (RN-730). Vale para o escritório e para a empresa, cada um com acesso só às notas que já pode consultar (RN-744).
 - **RN-744** — A empresa consulta apenas as próprias notas, no portal, com os mesmos filtros. O escritório consulta por empresa e, opcionalmente, todas as empresas em uma competência.
 
 ### 10.7 Guarda
@@ -583,8 +599,8 @@ A empresa envia os **arquivos XML** das suas notas fiscais. O sistema lê cada X
 
 ## 15. Honorários (financeiro do escritório)
 
-- **RN-1200** — Cada empresa cliente tem um contrato com valor de honorário mensal e dia de vencimento.
-- **RN-1201** — Reajuste de honorário mantém histórico com vigência.
+- **RN-1200** — Cada empresa cliente tem um contrato com valor de honorário mensal e dia de vencimento, informados na aba "Cobrança" do cadastro da empresa. O valor deve ser maior que zero e o dia de vencimento vai de 1 a 28 (para valer em todos os meses). No cadastro, a vigência começa na data de início do atendimento.
+- **RN-1201** — Reajuste de honorário mantém histórico com vigência: o novo valor vale a partir do dia da alteração e o anterior fica registrado até a véspera, com quem registrou. Alterações no mesmo dia corrigem a vigência do dia, sem abrir outra. O histórico aparece abaixo dos campos.
 - **RN-1202** — **[A DEFINIR]** geração de cobrança (boleto/Pix) e integração bancária.
 - **RN-1203** — Valores monetários em reais, com duas casas decimais.
 
@@ -665,18 +681,22 @@ Rotina automática que, todos os dias, envia a cada empresa a lista do que ela a
 
 - **RN-1600** — Na tela da empresa, o escritório cadastra as **despesas** da empresa cliente, com **descrição**, **valor** e **data de vencimento** (todos obrigatórios). Fica registrado quem cadastrou.
 - **RN-1601** — O valor é em reais, com duas casas decimais, e deve ser maior que zero.
-- **RN-1602** — Cadastrar, alterar e excluir despesas exige a permissão "gerenciar despesas" (perfil Financeiro). A lista mostra o total das despesas exibidas e filtra por período de vencimento.
+- **RN-1602** — Na equipe do escritório, cadastrar, alterar e excluir despesas exige a atribuição "Despesas". A lista mostra o total das despesas exibidas e filtra por período de vencimento.
 - **RN-1603** — Excluir uma despesa é exclusão lógica: ela some da lista, mas o registro é preservado.
-- **RN-1604** — **[A DEFINIR]** comprovante de pagamento anexado, categoria, recorrência mensal, estorno de pagamento registrado por engano, e se o usuário da empresa verá ou cadastrará despesas pelo portal.
+- **RN-1604** — **[A DEFINIR]** recorrência mensal, estorno de pagamento registrado por engano e remoção de documento anexado por engano.
 - **RN-1605** — **Pagamento:** o escritório registra o pagamento informando **valor pago** e **data do pagamento** (o formulário já vem com o valor da despesa e a data de hoje). O valor pago deve ser maior que zero e pode ser diferente do valor da despesa (juros, desconto). A data não pode ser futura. O pagamento é registrado uma única vez e guarda quem registrou e quando. A situação da despesa é calculada: **paga** (com pagamento), **vencida** (sem pagamento e vencimento passado) ou **em aberto**.
-- **RN-1606** — **Boleto:** no cadastro ou na alteração, pode-se anexar o boleto da despesa (PDF ou imagem, até 10 MB), que fica disponível para download na lista.
+- **RN-1606** — **Documentos da despesa:** no cadastro ou na alteração, pode-se anexar vários documentos à despesa, cada um de um tipo: **Boleto**, **Recibo**, **Nota Fiscal** ou **Cheque**. Cada arquivo precisa respeitar os formatos e o tamanho máximo configurados para o seu tipo (RN-1610), conferidos também no servidor. Os documentos ficam disponíveis na lista ("Documentos"), com quem enviou e quando. Os boletos anexados antes desta regra viraram documentos do tipo Boleto.
+- **RN-1607** — **Despesas pelo portal:** o usuário da empresa tem o menu "Despesas" no portal e cadastra, altera, exclui e registra o pagamento das despesas das empresas a que está vinculado (RN-240), com as mesmas regras do escritório. Escritório e empresa veem e mantêm a mesma lista; fica registrado quem cadastrou cada despesa.
+- **RN-1608** — **Despesa já paga:** no cadastro (pelo escritório ou pela empresa), a despesa pode ser marcada como "já paga", informando valor pago e data do pagamento (o formulário sugere o valor da despesa e a data de hoje). O pagamento segue as mesmas regras de RN-1605 e é registrado em nome de quem cadastrou.
+- **RN-1609** — **Categoria:** toda despesa pertence a uma categoria (obrigatória). As categorias são do escritório e só o administrador as cadastra, em Configurações → Categorias de despesa. Não há duas categorias com o mesmo nome. Categoria não é excluída, é inativada: some das novas despesas, mas as despesas antigas continuam com ela. A lista de despesas mostra e filtra pela categoria.
+- **RN-1610** — **Configuração dos documentos:** em Configurações → Escritório e cobrança, o administrador define, para cada tipo de documento de despesa, os formatos aceitos (PDF, imagem, XML, planilha) e o tamanho máximo (de 1 a 50 MB). Enquanto não configurar, vale: PDF ou imagem, até 10 MB (Nota Fiscal aceita também XML).
 
 ---
 
 ## Futuro (fora do escopo atual)
 
 - Dashboard do colaborador (ex.: suas admissões em análise, fila de avaliação, empresas da sua carteira) — ver RN-1500.
-- Novos perfis de colaborador (Contador, Analista Fiscal, Departamento Pessoal...) — ver RN-221.
+- Novas atribuições de colaborador (ex.: obrigações fiscais, honorários) — ver RN-221.
 - Perfis diferentes para usuários da empresa (sócio, RH, financeiro...) — ver RN-245.
 - Afastamentos, férias e folha de pagamento.
 - Integração direta com o eSocial.
@@ -690,8 +710,6 @@ Rotina automática que, todos os dias, envia a cada empresa a lista do que ela a
 | RN-102 | Como um escritório é cadastrado |
 | RN-203 | CPF/telefone obrigatórios no usuário |
 | RN-212 | Mais de um administrador por escritório |
-| RN-224 | Confirmar as permissões dos perfis Operacional e Financeiro |
-| RN-225 | Perfis fixos ou personalizáveis por escritório |
 | RN-226 | Colaborador vê todas as empresas ou só sua carteira |
 | RN-242 | Usuário da empresa pode convidar outros da sua empresa |
 | RN-307 | Autenticação em dois fatores |
@@ -720,7 +738,6 @@ Rotina automática que, todos os dias, envia a cada empresa a lista do que ela a
 | RN-715 | Validação de assinatura e consulta à SEFAZ |
 | RN-720 | Competência da nota de entrada: emissão ou entrada efetiva |
 | RN-723 | Notas anteriores ao início do atendimento: alertar ou bloquear |
-| RN-743 | Geração do DANFE |
 | RN-805 | Tipos de obrigação e regras de geração |
 | RN-901 | Tamanho máximo de arquivo |
 | RN-1202 | Cobrança e integração bancária |
@@ -729,7 +746,7 @@ Rotina automática que, todos os dias, envia a cada empresa a lista do que ela a
 | RN-1312 | Cobrança só em dias úteis; horário configurável |
 | RN-1316 | Destinatários específicos por empresa |
 | RN-1500 | Tela inicial do portal da empresa |
-| RN-1604 | Despesas: comprovante, categoria, recorrência, estorno de pagamento, acesso pelo portal |
+| RN-1604 | Despesas: recorrência, estorno de pagamento, remoção de documento anexado por engano |
 
 ## Fontes de referência
 

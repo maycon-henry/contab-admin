@@ -7,6 +7,7 @@ use App\Domain\Opcoes;
 use App\Enums\Permissao;
 use App\Enums\RegimeTributario;
 use App\Enums\SituacaoEmpresa;
+use App\Filament\Compartilhado\CampoMoeda;
 use App\Filament\Empresa\Pages\CadastroEmpresa;
 use App\Filament\Empresa\Pages\PaginaDaEmpresa;
 use App\Filament\Escritorio\Resources\Empresas\Pages\CreateEmpresa;
@@ -17,6 +18,7 @@ use App\Filament\Escritorio\Resources\Empresas\RelationManagers\RotinaRelationMa
 use App\Filament\Escritorio\Resources\Empresas\RelationManagers\SociosRelationManager;
 use App\Filament\Escritorio\Resources\Empresas\RelationManagers\UsuariosRelationManager;
 use App\Models\Empresa;
+use App\Models\EmpresaHonorario;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -27,11 +29,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 /** regras.md seção 7 — empresas clientes */
@@ -77,6 +81,18 @@ class EmpresaResource extends Resource
     }
 
     /** Campos do cadastro, usados aqui e na tela "Cadastro da Empresa" do contexto da empresa. */
+    /** RN-1201 — vigências do honorário, da atual para as anteriores. */
+    public static function historicoHonorarios(?Empresa $empresa): HtmlString
+    {
+        $linhas = $empresa?->honorarios()->with('registradoPor')->get()->map(fn (EmpresaHonorario $h) => '<li>'
+            .'R$ '.number_format((float) $h->valor, 2, ',', '.').' — vence todo dia '.$h->dia_vencimento
+            .' — de '.$h->vigencia_inicio->format('d/m/Y').($h->vigencia_fim ? ' até '.$h->vigencia_fim->format('d/m/Y') : ' (vigente)')
+            .($h->registradoPor ? ' — por '.e($h->registradoPor->name) : '')
+            .'</li>')->implode('');
+
+        return new HtmlString('<p><strong>Histórico de honorários</strong></p><ul style="list-style:disc;padding-left:1.2rem">'.$linhas.'</ul>');
+    }
+
     public static function camposDoCadastro(): array
     {
         return [
@@ -134,6 +150,12 @@ class EmpresaResource extends Resource
                         ->helperText('Vazio = usa a data de corte padrão do escritório (RN-1311).'),
                     DatePicker::make('cobranca_suspensa_ate')->label('Suspender cobrança até'),
                     TextInput::make('cobranca_suspensa_motivo')->label('Motivo da suspensão')->requiredWith('cobranca_suspensa_ate'),
+                    // RN-1200 — honorário acordado com a empresa; RN-1201 — reajuste gera nova vigência
+                    CampoMoeda::make('honorario_valor')->label('Honorário mensal'),
+                    TextInput::make('honorario_dia_vencimento')->label('Dia de vencimento do honorário')->numeric()->minValue(1)->maxValue(28)
+                        ->requiredWith('honorario_valor')->helperText('De 1 a 28, para valer em todos os meses.'),
+                    Text::make(fn (?Empresa $record) => self::historicoHonorarios($record))->columnSpanFull()
+                        ->visible(fn (?Empresa $record) => $record?->honorarios()->exists() ?? false),
                 ]),
             ]),
         ];

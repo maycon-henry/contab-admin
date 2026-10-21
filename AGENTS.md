@@ -35,7 +35,7 @@ A aplicação roda em **dois containers**, definidos em `docker-compose.yml` na 
 
 | Serviço | Ambiente | Conteúdo | Observações |
 |---|---|---|---|
-| `app` | todos | PHP 8.3 (FPM) + Nginx, Composer, Node (build dos assets) e extensões necessárias (`pdo_pgsql`, `intl`, `zip`, `gd`, `bcmath`) | Código montado como volume em desenvolvimento. Processos internos (PHP-FPM, Nginx, worker de fila e agendador) gerenciados por Supervisor. |
+| `app` | todos | PHP 8.3 (FPM) + Nginx, Composer, Node (build dos assets) e extensões necessárias (`pdo_pgsql`, `intl`, `zip`, `gd`, `bcmath`, `soap` — exigida pela biblioteca do DANFE) | Código montado como volume em desenvolvimento. Processos internos (PHP-FPM, Nginx, worker de fila e agendador) gerenciados por Supervisor. |
 | `db` | todos | PostgreSQL (imagem oficial, versão fixada na tag) | Dados em volume nomeado (`pgdata`), para não se perderem ao recriar o container. |
 | `mailhog` | **somente local** | MailHog (`mailhog/mailhog:v1.0.1`) | Captura todos os e-mails enviados pela aplicação (convites, recuperação de senha, notificações) para inspeção, sem entregá-los a ninguém. |
 
@@ -161,7 +161,7 @@ app/
 
 - Três painéis Filament, cada um com seu Panel Provider em `app/Providers/Filament/`:
   - **`escritorio`** (`/admin`) — equipe do escritório: trabalho que envolve todas as empresas (início, filas de avaliação e de admissões, cadastro de empresas, equipe, relatórios, configurações). A tela "Área de trabalho" (competência da empresa no painel do escritório) foi removida da interface; competências e itens continuam no domínio (portal, fila de avaliação, cobrança e dashboard);
-  - **`empresa`** (`/admin/empresa/{empresa}`) — equipe do escritório **dentro de uma empresa selecionada**: o menu lateral é só dessa empresa (Página da Empresa — ações pendentes, `PendenciasDaEmpresa` —, Notas Fiscais de Entrada, Notas Fiscais de Saída, Funcionários, Cadastro da Empresa, Despesas) e o seletor no topo troca de empresa. Telas com dados de uma única empresa ficam aqui, nunca no menu geral;
+  - **`empresa`** (`/admin/empresa/{empresa}`) — equipe do escritório **dentro de uma empresa selecionada**: o menu lateral é só dessa empresa (Página da Empresa — ações pendentes, `PendenciasDaEmpresa` —, Notas Fiscais — entrada e saída numa lista só, com abas Todas/Entrada/Saída —, Documentos — documentos do mês; o que o escritório envia já fica aceito —, Funcionários, Cadastro da Empresa, Despesas) e o seletor no topo troca de empresa. Telas com dados de uma única empresa ficam aqui, nunca no menu geral;
   - **`portal`** (`/portal/{empresa}`) — usuários das empresas clientes (`regras.md` seção 5.5). Não há menu "Admissões": admissão e cadastro do funcionário são acessados pela tela de Funcionários (Admitir novo, Visualizar cadastro, Atualizar cadastro).
 - Links entre painéis sempre informam o painel: `Resource::getUrl(..., panel: 'escritorio')` (ou `'empresa'`, com `tenant:`). Sem isso, o Filament monta a rota no painel atual e a página quebra.
 - O acesso a cada painel é controlado por `canAccessPanel()` no model `User`, conforme o tipo do usuário. Um usuário da empresa nunca acessa `/admin`, e vice-versa.
@@ -255,7 +255,7 @@ O `DesenvolvimentoSeeder` cria um ambiente pronto para testar o sistema manualme
 |---|---|
 | Escritório | "Escritório Demo", CNPJ `11.222.333/0001-81`, situação `ativo` |
 | Administrador (titular) | `admin@contab.test` — senha `123` |
-| Colaborador (perfil Operacional) | `colaborador@contab.test` — senha `123` (também `daniela@contab.test` com Operacional + Financeiro) |
+| Colaboradores | `colaborador@contab.test` — senha `123`, com as atribuições operacionais (empresas, usuários do portal, admissões, documentos, notas); `daniela@contab.test` com **todas** as atribuições; `eduardo@contab.test` (convite pendente) com financeiro e despesas |
 | Empresa cliente | "Empresa Demo Ltda", CNPJ `22.333.444/0001-81`, Simples Nacional, situação `ativa`, com dados de empregador e estabelecimento matriz preenchidos (para permitir admissões — `regras.md` RN-414) |
 | Usuário da empresa | `empresa@contab.test` — senha `123`, vinculado à Empresa Demo |
 
@@ -301,6 +301,7 @@ Regras:
 - **Segurança do ZIP:** limitar quantidade de arquivos, tamanho descompactado total e por arquivo (proteção contra *zip bomb*), ignorar caminhos com `..` e arquivos que não sejam `.xml`.
 - **Armazenamento:** XML original gravado sem alteração em storage privado, no caminho `escritorios/{escritorio}/empresas/{empresa}/notas/{AAAA-MM}/{chave}.xml`, com hash SHA-256 registrado para garantir integridade (RN-750).
 - **Download em lote** (RN-743): o `.zip` é gerado por job e disponibilizado por URL temporária, para não travar a requisição em consultas grandes.
+- **DANFE** (RN-743): contrato `App\Contracts\GeradorDanfe`, implementado por `App\Integrations\Nfephp\GeradorDanfeNfephp` (pacote `nfephp-org/sped-da`, DANFE para modelo 55 e DANFCE para 65). A Action `GerarDanfe` verifica o acesso e lê o XML guardado; a rota `notas.danfe` (`/notas-fiscais/{nota}/danfe`) devolve o PDF *inline*, e o route model binding já aplica os scopes de escritório e empresa. Em testes, troque o contrato por um mock quando não precisar do PDF real.
 - **Testes:** XMLs de exemplo (anonimizados) em `tests/Fixtures/xml/` cobrindo saída, entrada de terceiros, entrada própria, NFC-e, cancelamento, duplicidade, nota de outra empresa, chave inválida, nota sem protocolo e virada de mês no fuso.
 
 ## 6. Autenticação e autorização
@@ -314,15 +315,15 @@ Regras:
 - Sessões web armazenadas no banco (driver `database`), para permitir encerrar sessões de um usuário (RN-233, RN-313).
 - Eventos de autenticação (`Login`, `Failed`, `Logout`, `PasswordReset`) registrados por listeners em uma tabela de log de acessos (RN-330).
 
-### 6.2 Autorização (perfis e permissões)
+### 6.2 Autorização (atribuições e permissões)
 
-- Pacote **spatie/laravel-permission** com o recurso *teams* habilitado, usando `escritorio_id` como team — perfis e permissões ficam isolados por escritório.
-- O tipo do usuário (`administrador` / `colaborador` / `usuario_empresa`) é um Enum na tabela de usuários; o **perfil** (de colaborador ou de usuário da empresa) é um *role* do Spatie. Assim, novos perfis de usuário da empresa (RN-245) seguem o mesmo mecanismo.
+- Pacote **spatie/laravel-permission** com o recurso *teams* habilitado, usando `escritorio_id` como team — atribuições e permissões ficam isoladas por escritório.
+- O tipo do usuário (`administrador` / `colaborador` / `usuario_empresa`) é um Enum na tabela de usuários; cada **atribuição** do colaborador (`regras.md` RN-220) é um *role* do Spatie. Futuros perfis de usuário da empresa (RN-245) seguem o mesmo mecanismo.
 - Permissões do portal ficam no mesmo catálogo (`App\Enums\Permissao`), marcadas como aplicáveis a usuários da empresa. Permissões de equipe nunca podem ser atribuídas a um perfil de usuário da empresa, e vice-versa.
 - Permissões nomeadas `modulo.acao` (ex.: `empresas.visualizar`, `empresas.cadastrar`) e catalogadas em um Enum (`App\Enums\Permissao`). O catálogo é sincronizado por seeder; nunca criar permissão "solta" no código.
-- **O código verifica permissões, nunca o nome do perfil.** Proibido `if ($user->hasRole('Financeiro'))`. Use `$user->can('empresas.cadastrar')` / Policies. É isso que permite criar novos perfis (RN-221) sem alterar código.
-- Perfis da equipe ficam no Enum `App\Enums\Perfil` (nome do role + permissões). A Action `DefinirPerfis` cria/atualiza os roles em cada escritório e atribui os perfis; um colaborador pode ter vários (`syncRoles`).
-- Administrador tem acesso total via `Gate::before` (retorna `true` para administrador do escritório corrente). Permissões exclusivas do administrador (RN-223) ficam marcadas no Enum e não podem ser atribuídas a perfis — validar isso na Action de gestão de perfis.
+- **O código verifica permissões, nunca o nome da atribuição.** Proibido `if ($user->hasRole('despesas'))`. Use `$user->can('despesas.gerenciar')` / Policies. É isso que permite criar novas atribuições (RN-221) sem alterar código.
+- As atribuições ficam no Enum `App\Enums\Atribuicao` (valor = nome do role, rótulo, descrição e permissões; `PERMISSOES_BASICAS` entram em todas). A Action `DefinirAtribuicoes` cria/atualiza os roles em cada escritório e define as atribuições do colaborador (`syncRoles`).
+- Administrador tem acesso total via `Gate::before` (retorna `true` para administrador do escritório corrente). Permissões exclusivas do administrador (RN-223) ficam marcadas no Enum `Permissao` e nunca entram numa atribuição — `DefinirAtribuicoes` as filtra.
 - Autorização **sempre** por Policy/Gate, tanto no Filament (Resources usam as Policies automaticamente) quanto na API — nunca checagem manual no controller ou na tela.
 - Testes de autorização cobrem, para cada recurso: administrador, colaborador com permissão, colaborador sem permissão, usuário de outro escritório e — quando o recurso pertence a uma empresa — usuário da própria empresa e usuário de **outra empresa do mesmo escritório**.
 
@@ -355,6 +356,8 @@ Regras:
 - Componentes de formulário/tabela reutilizados entre Resources (ex.: campo CNPJ, campo moeda) ficam em classes próprias, não copiados.
 - Máscaras e validações de UI (CPF, CNPJ, moeda, datas) são conveniência; a validação real é sempre no backend (Action/DTO), valendo igualmente para a API.
 - Evitar JavaScript customizado; quando necessário, usar Alpine.js (já incluso no Livewire).
+- **Ações das linhas das tabelas aparecem só como ícone**, com o nome e uma descrição curta no tooltip. Isso é aplicado globalmente em `AppServiceProvider` (`Table::configureUsing` → `modifyUngroupedRecordActionsUsing`) por `App\Filament\Support\DescricaoAcoes`. Toda ação de linha nova precisa de `->icon(...)` e de uma descrição em `DescricaoAcoes::DESCRICOES`, com o nome da ação como chave. Ação sem ícone continua com texto.
+- Janelas informativas com dados em colunas (ex.: "Quais documentos", itens de uma cobrança) usam `App\Filament\Support\TabelaInformativa::html()`: tabela com cabeçalho, espaçamento e linhas separadas, legível no tema claro e no escuro. Não montar `<table>`/`<ul>` à mão.
 
 ### Dashboards
 

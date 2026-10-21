@@ -68,6 +68,11 @@ class ItemCompetencia extends Model
         return $this->belongsTo(User::class, 'avaliado_por_id');
     }
 
+    public function enviadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'enviado_por_id');
+    }
+
     /** RN-625 — atrasado é calculado, não é situação. */
     public function estaAtrasado(): bool
     {

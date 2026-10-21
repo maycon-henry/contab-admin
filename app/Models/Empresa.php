@@ -7,6 +7,7 @@ use App\Domain\DocumentoFiscal;
 use App\Enums\RegimeTributario;
 use App\Enums\SituacaoEmpresa;
 use App\Enums\TipoUsuario;
+use App\Exceptions\RegraDeNegocioException;
 use App\Models\Concerns\PertenceAoEscritorio;
 use Filament\Models\Contracts\HasName;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,6 +36,7 @@ class Empresa extends Model implements HasName
             'indicativo_construtora' => 'boolean',
             'indicativo_desoneracao' => 'boolean',
             'cobranca_suspensa_ate' => 'date',
+            'honorario_valor' => 'decimal:2',
         ];
     }
 
@@ -54,6 +56,47 @@ class Empresa extends Model implements HasName
                 $empresa->regimes()->whereNull('vigencia_fim')->update(['vigencia_fim' => $hoje]);
                 $empresa->regimes()->create([
                     'regime_tributario' => $empresa->regime_tributario,
+                    'vigencia_inicio' => $empresa->wasRecentlyCreated ? $empresa->data_inicio_atendimento : $hoje,
+                ]);
+            }
+        });
+
+        // RN-1200/RN-1203 — honorário maior que zero, com dia de vencimento válido em todos os meses
+        static::saving(function (Empresa $empresa) {
+            if ($empresa->honorario_valor === null) {
+                return;
+            }
+
+            RegraDeNegocioException::se((float) $empresa->honorario_valor <= 0, 'O valor do honorário deve ser maior que zero.');
+            $dia = (int) $empresa->honorario_dia_vencimento;
+            RegraDeNegocioException::se($dia < 1 || $dia > 28, 'Informe o dia de vencimento do honorário (1 a 28).');
+        });
+
+        // RN-1201 — histórico do honorário com vigência; o reajuste nunca sobrescreve o valor anterior
+        static::saved(function (Empresa $empresa) {
+            if (! ($empresa->wasRecentlyCreated || $empresa->wasChanged(['honorario_valor', 'honorario_dia_vencimento']))) {
+                return;
+            }
+
+            $hoje = now()->toDateString();
+            $vigente = $empresa->honorarios()->whereNull('vigencia_fim')->first();
+            $novo = $empresa->honorario_valor === null ? null : [
+                'valor' => $empresa->honorario_valor,
+                'dia_vencimento' => $empresa->honorario_dia_vencimento,
+                'registrado_por_id' => Auth::id(),
+            ];
+
+            // alterado de novo no mesmo dia: corrige a vigência de hoje em vez de abrir outra
+            if ($vigente && $vigente->vigencia_inicio->toDateString() === $hoje) {
+                $novo ? $vigente->update($novo) : $vigente->delete();
+
+                return;
+            }
+
+            $vigente?->update(['vigencia_fim' => now()->subDay()->toDateString()]);
+
+            if ($novo) {
+                $empresa->honorarios()->create($novo + [
                     'vigencia_inicio' => $empresa->wasRecentlyCreated ? $empresa->data_inicio_atendimento : $hoje,
                 ]);
             }
@@ -84,6 +127,11 @@ class Empresa extends Model implements HasName
     public function regimes(): HasMany
     {
         return $this->hasMany(EmpresaRegime::class)->orderByDesc('vigencia_inicio');
+    }
+
+    public function honorarios(): HasMany
+    {
+        return $this->hasMany(EmpresaHonorario::class)->orderByDesc('vigencia_inicio');
     }
 
     public function socios(): HasMany

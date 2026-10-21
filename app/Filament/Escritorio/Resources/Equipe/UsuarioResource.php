@@ -4,8 +4,8 @@ namespace App\Filament\Escritorio\Resources\Equipe;
 
 use App\Actions\Usuarios\AlterarSituacaoUsuario;
 use App\Actions\Usuarios\ConvidarUsuario;
-use App\Actions\Usuarios\DefinirPerfis;
-use App\Enums\Perfil;
+use App\Actions\Usuarios\DefinirAtribuicoes;
+use App\Enums\Atribuicao;
 use App\Enums\Permissao;
 use App\Enums\TipoUsuario;
 use App\Filament\Escritorio\Resources\Equipe\Pages\CreateUsuario;
@@ -66,15 +66,15 @@ class UsuarioResource extends Resource
             Select::make('tipo')->label('Tipo')->required()->default(TipoUsuario::Colaborador->value)->live()
                 ->options([TipoUsuario::Administrador->value => 'Administrador', TipoUsuario::Colaborador->value => 'Colaborador'])
                 ->disabled(fn (?User $record) => $record?->titular)
-                ->helperText('O administrador tem acesso total; o colaborador acessa conforme os perfis.'),
-            // RN-220 — o colaborador pode acumular perfis
-            CheckboxList::make('perfis')->label('Perfis')->columnSpanFull()
-                ->options(Perfil::class)
-                ->descriptions(collect(Perfil::cases())->mapWithKeys(fn (Perfil $p) => [$p->value => $p->getDescription()])->all())
-                ->default([Perfil::Operacional->value])
+                ->helperText('O administrador tem acesso total; o colaborador acessa conforme as atribuições.'),
+            // RN-220 — atribuições marcadas uma a uma; "Marcar todas" dá acesso a tudo que um colaborador pode ter
+            CheckboxList::make('atribuicoes')->label('Atribuições')->columnSpanFull()->columns(2)
+                ->options(Atribuicao::class)
+                ->descriptions(collect(Atribuicao::cases())->mapWithKeys(fn (Atribuicao $a) => [$a->value => $a->getDescription()])->all())
+                ->bulkToggleable()
                 ->visible(fn (Get $get) => in_array($get('tipo'), [TipoUsuario::Colaborador, TipoUsuario::Colaborador->value], true))
                 ->required()
-                ->helperText('Marque um ou mais. As permissões são somadas.'),
+                ->helperText('Marque o que esta pessoa faz no escritório. Todo colaborador consulta as empresas e as notas fiscais.'),
         ]);
     }
 
@@ -85,9 +85,13 @@ class UsuarioResource extends Resource
                 TextColumn::make('name')->label('Nome')->searchable()->description(fn (User $r) => $r->titular ? 'Administrador titular' : null),
                 TextColumn::make('email')->label('E-mail')->searchable(),
                 TextColumn::make('tipo')->label('Tipo')->badge(),
-                TextColumn::make('perfis')->label('Perfis')->badge()
-                    ->state(fn (User $r) => $r->tipo === TipoUsuario::Administrador ? ['Acesso total'] : array_map(fn (Perfil $p) => $p->getLabel(), DefinirPerfis::perfisDe($r)))
-                    ->color(fn (string $state) => Perfil::tryFrom($state)?->getColor() ?? 'gray'),
+                TextColumn::make('atribuicoes')->label('Atribuições')->badge()->wrap()
+                    ->state(fn (User $r) => match (true) {
+                        $r->tipo === TipoUsuario::Administrador => ['Acesso total'],
+                        count(DefinirAtribuicoes::atribuicoesDe($r)) === count(Atribuicao::cases()) => ['Todas as atribuições'],
+                        default => array_map(fn (Atribuicao $a) => $a->getLabel(), DefinirAtribuicoes::atribuicoesDe($r)),
+                    })
+                    ->color(fn (string $state) => in_array($state, ['Acesso total', 'Todas as atribuições'], true) ? 'success' : 'info'),
                 IconColumn::make('ativo')->label('Ativo')->boolean(),
                 TextColumn::make('convite_aceito_em')->label('Convite')->dateTime('d/m/Y')->placeholder('Pendente'),
             ])

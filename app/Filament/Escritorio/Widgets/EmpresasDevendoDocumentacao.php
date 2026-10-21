@@ -5,6 +5,7 @@ namespace App\Filament\Escritorio\Widgets;
 use App\Domain\Competencia as Mes;
 use App\Domain\Consultas\ConsultaEmpresasDevendoDocumentacao;
 use App\Enums\Permissao;
+use App\Filament\Support\TabelaInformativa;
 use App\Models\Empresa;
 use App\Models\ItemCompetencia;
 use App\Models\TipoDocumento;
@@ -70,21 +71,25 @@ class EmpresasDevendoDocumentacao extends TableWidget
                 // RN-1513 — expandir para ver quais documentos
                 Action::make('quais')->label('Quais documentos')->icon('heroicon-o-list-bullet')->color('gray')
                     ->modalSubmitAction(false)->modalCancelActionLabel('Fechar')
-                    ->modalHeading(fn ($record) => $record->razao_social)
-                    ->schema(fn ($record) => [Text::make(new HtmlString($this->listaDocumentos($record)))]),
+                    ->modalHeading(fn ($record) => $record->razao_social)->modalWidth('3xl')
+                    ->schema(fn ($record) => [Text::make($this->listaDocumentos($record))]),
             ])
             ->emptyStateHeading('Nenhuma empresa com documentação em atraso')
             ->emptyStateIcon('heroicon-o-check-circle');
     }
 
-    private function listaDocumentos(Empresa $empresa): string
+    private function listaDocumentos(Empresa $empresa): HtmlString
     {
         $itens = ItemCompetencia::with('competencia')->where('empresa_id', $empresa->id)->atrasados()
             ->whereHas('competencia', fn ($q) => $q->where('situacao', 'aberta'))->orderBy('prazo')->get();
 
-        return '<table style="width:100%;font-size:.875rem"><tr><th align="left">Documento</th><th align="left">Competência</th><th align="left">Prazo</th><th align="left">Situação</th></tr>'
-            .$itens->map(fn (ItemCompetencia $i) => '<tr><td>'.e($i->nome).'</td><td>'.e($i->competencia->rotulo).'</td><td>'.$i->prazo->format('d/m/Y')
-                .'</td><td>'.e($i->situacao->getLabel()).' — '.$i->diasDeAtraso().' dia(s)</td></tr>')->implode('')
-            .'</table>';
+        return TabelaInformativa::html(
+            ['Documento', 'Competência', 'Prazo', 'Situação', 'Atraso'],
+            $itens->map(fn (ItemCompetencia $i) => [
+                $i->nome, $i->competencia->rotulo, $i->prazo->format('d/m/Y'), $i->situacao->getLabel(),
+                TabelaInformativa::alerta($i->diasDeAtraso().' dia(s)'),
+            ]),
+            'Nenhum documento em atraso.',
+        );
     }
 }

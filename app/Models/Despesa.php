@@ -6,6 +6,7 @@ use App\Models\Concerns\PertenceAEmpresa;
 use App\Models\Concerns\PertenceAoEscritorio;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** Despesa da empresa cliente — regras.md seção 19. */
@@ -55,5 +56,17 @@ class Despesa extends Model
     public function cadastradaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cadastrada_por_id');
+    }
+
+    /** RN-1609 */
+    public function categoria(): BelongsTo
+    {
+        return $this->belongsTo(CategoriaDespesa::class, 'categoria_despesa_id');
+    }
+
+    /** RN-1606 — boletos, recibos, notas fiscais e cheques anexados. */
+    public function documentos(): MorphMany
+    {
+        return $this->morphMany(Documento::class, 'documentavel');
     }
 }

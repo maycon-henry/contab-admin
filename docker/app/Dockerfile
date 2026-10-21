@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         nginx supervisor git unzip curl \
         libpq-dev libicu-dev libzip-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql intl zip gd bcmath pcntl opcache exif \
+    && docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql intl zip gd bcmath pcntl opcache exif soap \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Node (build dos assets) e Composer

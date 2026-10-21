@@ -2,7 +2,6 @@
 
 namespace App\Actions\Despesas;
 
-use App\Enums\Permissao;
 use App\Exceptions\RegraDeNegocioException;
 use App\Models\Despesa;
 use App\Models\User;
@@ -13,10 +12,7 @@ class RegistrarPagamentoDespesa
 {
     public function executar(Despesa $despesa, User $user, mixed $valorPago, mixed $dataPagamento): Despesa
     {
-        RegraDeNegocioException::se(
-            $despesa->escritorio_id !== $user->escritorio_id || ! $user->can(Permissao::DespesasGerenciar->value),
-            'Você não tem permissão para registrar pagamentos desta empresa.',
-        );
+        RegraDeNegocioException::se(! $user->podeGerenciarDespesasDa($despesa->empresa), 'Você não tem permissão para registrar pagamentos desta empresa.');
         RegraDeNegocioException::se($despesa->estaPaga(), 'O pagamento desta despesa já foi registrado.');
         RegraDeNegocioException::se(! is_numeric($valorPago) || (float) $valorPago <= 0, 'O valor pago deve ser maior que zero.');
         RegraDeNegocioException::se(blank($dataPagamento), 'Informe a data do pagamento.');

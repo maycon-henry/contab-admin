@@ -10,6 +10,7 @@ use App\Filament\Escritorio\Resources\Empresas\RelationManagers\Estabelecimentos
 use App\Filament\Escritorio\Resources\Empresas\RelationManagers\RotinaRelationManager;
 use App\Filament\Escritorio\Resources\Empresas\RelationManagers\SociosRelationManager;
 use App\Filament\Escritorio\Resources\Empresas\RelationManagers\UsuariosRelationManager;
+use App\Filament\Support\Acao;
 use App\Models\Empresa;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -91,9 +92,7 @@ class CadastroEmpresa extends Page implements HasSchemas
         }
 
         unset($dados['cnpj']); // CNPJ não muda depois do cadastro
-        $empresa->update($dados);
-
-        Notification::make()->success()->title('Cadastro atualizado.')->send();
+        Acao::rodar(fn () => $empresa->update($dados), 'Cadastro atualizado.');
     }
 
     /** Abas exibidas abaixo do formulário (sócios, estabelecimentos, rotina, usuários do portal). */

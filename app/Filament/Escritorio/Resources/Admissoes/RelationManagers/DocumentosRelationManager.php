@@ -4,10 +4,12 @@ namespace App\Filament\Escritorio\Resources\Admissoes\RelationManagers;
 
 use App\Actions\Admissao\AvaliarDocumentoAdmissao;
 use App\Enums\DocumentoAdmissao;
+use App\Enums\MotivoRecusa;
 use App\Enums\SituacaoContrato;
 use App\Filament\Support\Acao;
 use App\Models\Documento;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
@@ -49,8 +51,13 @@ class DocumentosRelationManager extends RelationManager
                 Action::make('aceitar')->label('Aceitar')->icon('heroicon-o-check')->color('success')->visible($podeAvaliar)
                     ->action(fn (Documento $record, Action $a) => Acao::rodar(fn () => app(AvaliarDocumentoAdmissao::class)->executar($record, auth()->user(), true), 'Documento aceito.', $a)),
                 Action::make('recusar')->label('Recusar')->icon('heroicon-o-x-mark')->color('danger')->visible($podeAvaliar)
-                    ->schema([Textarea::make('motivo')->label('Motivo')->required()])
-                    ->action(fn (Documento $record, array $data, Action $a) => Acao::rodar(fn () => app(AvaliarDocumentoAdmissao::class)->executar($record, auth()->user(), false, $data['motivo']), 'Documento recusado.', $a)),
+                    ->schema([
+                        Select::make('motivo')->label('Motivo')->options(MotivoRecusa::opcoesParaAdmissao())->required(),
+                        Textarea::make('complemento')->label('Detalhe (a empresa verá)')->rows(2)->placeholder('Ex.: comprovante com mais de 90 dias'),
+                    ])
+                    ->action(fn (Documento $record, array $data, Action $a) => Acao::rodar(fn () => app(AvaliarDocumentoAdmissao::class)->executar($record, auth()->user(), false,
+                        trim(MotivoRecusa::from($data['motivo'] instanceof MotivoRecusa ? $data['motivo']->value : $data['motivo'])->getLabel()
+                            .(filled($data['complemento'] ?? null) ? ' — '.$data['complemento'] : ''))), 'Documento recusado.', $a)),
             ])
             ->paginated(false);
     }

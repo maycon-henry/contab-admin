@@ -4,33 +4,41 @@ namespace App\Filament\Empresa\Resources\NotasFiscais;
 
 use App\Actions\NotasFiscais\MoverNotaCompetencia;
 use App\Domain\Competencia as Mes;
-use App\Enums\ClassificacaoNota;
 use App\Enums\Permissao;
 use App\Filament\Compartilhado\TabelaNotas;
+use App\Filament\Empresa\Resources\NotasFiscais\Pages\ListNotasFiscais;
 use App\Filament\Support\Acao;
 use App\Models\NotaFiscal;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Base das notas fiscais da empresa selecionada — regras.md seção 10.
- * Entrada e saída são telas separadas, cada uma restrita às suas classificações (RN-716).
+ * Notas fiscais da empresa selecionada — regras.md seção 10.
+ * Entrada e saída ficam na mesma lista; as abas e o filtro de classificação separam (RN-716, RN-741).
  */
-abstract class NotasFiscaisResource extends Resource
+class NotasFiscaisResource extends Resource
 {
     protected static ?string $model = NotaFiscal::class;
 
     protected static ?string $tenantRelationshipName = 'notasFiscais';
 
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $navigationLabel = 'Notas Fiscais';
+
     protected static ?string $modelLabel = 'nota fiscal';
 
-    /** @return array<ClassificacaoNota> */
-    abstract public static function classificacoes(): array;
+    protected static ?string $pluralModelLabel = 'notas fiscais';
+
+    protected static ?string $slug = 'notas-fiscais';
 
     public static function canViewAny(): bool
     {
@@ -42,11 +50,6 @@ abstract class NotasFiscaisResource extends Resource
         return false;
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->whereIn('classificacao', static::classificacoes());
-    }
-
     public static function table(Table $table): Table
     {
         $tabela = TabelaNotas::configurar($table, mostrarCompetencia: true);
@@ -55,10 +58,9 @@ abstract class NotasFiscaisResource extends Resource
             ->filters([
                 SelectFilter::make('competencia')->label('Competência')
                     ->options(fn () => NotaFiscal::query()->where('empresa_id', Filament::getTenant()?->getKey())
-                        ->whereIn('classificacao', static::classificacoes())
                         ->select('competencia')->distinct()->orderByDesc('competencia')->pluck('competencia')
                         ->mapWithKeys(fn ($c) => [$c->toDateString() => $c->format('m/Y')])),
-                ...collect($tabela->getFilters())->reject(fn ($f, $nome) => $nome === 'classificacao' && count(static::classificacoes()) === 1)->all(),
+                ...$tabela->getFilters(),
             ])
             ->recordActions([
                 ...$tabela->getRecordActions(),
@@ -73,5 +75,10 @@ abstract class NotasFiscaisResource extends Resource
                         fn () => app(MoverNotaCompetencia::class)->executar($record, auth()->user(), Mes::parse($data['competencia']), $data['justificativa']),
                         'Nota movida de competência.', $action)),
             ]);
+    }
+
+    public static function getPages(): array
+    {
+        return ['index' => ListNotasFiscais::route('/')];
     }
 }

@@ -2,28 +2,23 @@
 
 namespace App\Filament\Portal\Resources\DocumentosDoMes;
 
-use App\Actions\Itens\EnviarDocumentosDoItem;
 use App\Actions\Itens\InformarSemMovimento;
 use App\Domain\Competencia as Mes;
-use App\Domain\Opcoes;
 use App\Enums\SituacaoItem;
+use App\Filament\Compartilhado\AcaoEnviarDocumentoDoItem;
 use App\Filament\Escritorio\Acoes\AcoesItem;
 use App\Filament\Portal\Resources\DocumentosDoMes\Pages\ListDocumentosDoMes;
 use App\Filament\Support\Acao;
 use App\Models\ItemCompetencia;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Text;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 
 /** Portal — documentos do mês que a empresa deve entregar (regras.md seção 9.7) */
 class DocumentoDoMesResource extends Resource
@@ -96,37 +91,11 @@ class DocumentoDoMesResource extends Resource
                 ]),
             ])
             ->recordActions([
-                self::acaoEnviar(),
+                AcaoEnviarDocumentoDoItem::make(fn (ItemCompetencia $record) => $record),
                 self::acaoSemMovimento(),
                 AcoesItem::verArquivos(),
             ])
             ->defaultSort('prazo');
-    }
-
-    public static function acaoEnviar(): Action
-    {
-        return Action::make('enviar')->label(fn (ItemCompetencia $r) => $r->situacao === SituacaoItem::Recusado ? 'Reenviar' : 'Enviar')
-            ->icon('heroicon-o-arrow-up-tray')->button()
-            ->visible(fn (ItemCompetencia $r) => in_array($r->situacao, SituacaoItem::cobraveis(), true) && ! $r->competencia->estaFechada())
-            ->modalHeading(fn (ItemCompetencia $r) => "Enviar: {$r->nome} ({$r->competencia->rotulo})")
-            ->schema(fn (ItemCompetencia $r) => array_filter([
-                $r->tipoDocumento?->instrucoes ? Text::make(new HtmlString('<strong>Instruções:</strong> '.e($r->tipoDocumento->instrucoes))) : null,
-                FileUpload::make('arquivos')->label('Arquivo(s)')->required()
-                    ->multiple($r->tipoDocumento?->multiplos_arquivos ?? false)
-                    ->disk('local')->directory("escritorios/{$r->escritorio_id}/empresas/{$r->empresa_id}/documentos")->visibility('private')
-                    ->storeFileNamesIn('nomes')
-                    ->acceptedFileTypes(Opcoes::mimes($r->tipoDocumento?->formatos ?? []))
-                    ->maxSize(20480),
-                $r->exige_validade ? DatePicker::make('validade')->label('Data de validade do documento')->required()->minDate(today()) : null,
-            ]))
-            ->action(function (ItemCompetencia $r, array $data, Action $action) {
-                $caminhos = (array) $data['arquivos'];
-                $nomes = (array) ($data['nomes'] ?? []);
-                $arquivos = collect($caminhos)->mapWithKeys(fn ($c) => [$c => $nomes[$c] ?? basename($c)])->all();
-
-                Acao::rodar(fn () => app(EnviarDocumentosDoItem::class)->executar($r, auth()->user(), $arquivos, $data['validade'] ?? null),
-                    'Documento enviado! O escritório vai conferir.', $action);
-            });
     }
 
     public static function acaoSemMovimento(): Action

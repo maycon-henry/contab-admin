@@ -42,7 +42,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo_pgsql, pgsql, intl, zip, gd, bcmath, exif
+          extensions: pdo_pgsql, pgsql, intl, zip, gd, bcmath, exif, soap
           coverage: none
 
       - uses: actions/setup-node@v4

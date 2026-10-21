@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Permissao;
 use App\Enums\SituacaoEmpresa;
 use App\Enums\SituacaoEscritorio;
 use App\Enums\TipoUsuario;
@@ -138,6 +139,16 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         }
 
         return in_array($tenant->getKey(), $this->empresasIds(), true);
+    }
+
+    /** regras.md RN-1602 e RN-1607 — equipe com permissão ou usuário vinculado à própria empresa. */
+    public function podeGerenciarDespesasDa(Empresa $empresa): bool
+    {
+        if ($this->tipo === TipoUsuario::UsuarioEmpresa) {
+            return in_array($empresa->getKey(), $this->empresasIds(), true);
+        }
+
+        return $empresa->escritorio_id === $this->escritorio_id && $this->can(Permissao::DespesasGerenciar->value);
     }
 
     /** URL inicial conforme o tipo de usuário (RN-304). */

@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use App\Auditoria\RegistrarAcesso;
+use App\Contracts\GeradorDanfe;
 use App\Enums\TipoUsuario;
+use App\Filament\Support\DescricaoAcoes;
 use App\Http\Responses\LoginResponse;
+use App\Integrations\Nfephp\GeradorDanfeNfephp;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
 use Filament\Tables\Table;
@@ -23,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // RN-304 — após o login, cada tipo de usuário vai para a sua área
         $this->app->bind(LoginResponseContract::class, LoginResponse::class);
+
+        // RN-743 — DANFE gerado a partir do XML (AGENTS.md 3.1: integração atrás de contrato)
+        $this->app->bind(GeradorDanfe::class, GeradorDanfeNfephp::class);
     }
 
     public function boot(): void
@@ -39,9 +45,12 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Em todas as tabelas: "Aplicar filtros" também fecha o painel de filtros (quando ele é um dropdown)
-        Table::configureUsing(fn (Table $table) => $table->filtersApplyAction(
-            // o handler Alpine substitui o wire:click, por isso ele mesmo chama applyTableFilters
-            fn (Action $action) => $action->alpineClickHandler("\$wire.applyTableFilters(); \$el.closest('.fi-dropdown') && close()"),
-        ));
+        Table::configureUsing(fn (Table $table) => $table
+            ->filtersApplyAction(
+                // o handler Alpine substitui o wire:click, por isso ele mesmo chama applyTableFilters
+                fn (Action $action) => $action->alpineClickHandler("\$wire.applyTableFilters(); \$el.closest('.fi-dropdown') && close()"),
+            )
+            // ações das linhas só com ícone; nome e descrição curta no tooltip (DescricaoAcoes)
+            ->modifyUngroupedRecordActionsUsing(fn (Action $action) => DescricaoAcoes::aplicar($action)));
     }
 }

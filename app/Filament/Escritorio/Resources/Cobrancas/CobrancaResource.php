@@ -4,6 +4,7 @@ namespace App\Filament\Escritorio\Resources\Cobrancas;
 
 use App\Enums\Permissao;
 use App\Filament\Escritorio\Resources\Cobrancas\Pages\ListCobrancas;
+use App\Filament\Support\TabelaInformativa;
 use App\Models\CobrancaDocumentacao;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -13,7 +14,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 /** regras.md RN-1319 — histórico das cobranças enviadas */
@@ -65,9 +65,19 @@ class CobrancaResource extends Resource
             ->recordActions([
                 Action::make('detalhe')->label('Itens')->icon('heroicon-o-list-bullet')->color('gray')
                     ->modalSubmitAction(false)->modalCancelActionLabel('Fechar')
-                    ->schema(fn (CobrancaDocumentacao $r) => [Text::make(new HtmlString('<ul style="list-style:disc;padding-left:1.2rem">'.collect($r->itens)->map(
-                        fn ($i) => '<li>'.e($i['nome']).' ('.e($i['competencia']).') — prazo '.e($i['prazo']).' — '.e($i['motivo_recusa'] ? 'Recusado: '.$i['motivo_recusa'] : ($i['dias_atraso'] ? "Atrasado há {$i['dias_atraso']} dia(s)" : 'Pendente')).'</li>'
-                    )->implode('').'</ul>'))]),
+                    ->modalHeading(fn (CobrancaDocumentacao $r) => 'Itens cobrados — '.$r->empresa?->razao_social)->modalWidth('3xl')
+                    ->schema(fn (CobrancaDocumentacao $r) => [Text::make(TabelaInformativa::html(
+                        ['Documento', 'Competência', 'Prazo', 'Situação'],
+                        collect($r->itens)->map(fn ($i) => [
+                            $i['nome'], $i['competencia'], $i['prazo'],
+                            match (true) {
+                                (bool) $i['motivo_recusa'] => TabelaInformativa::alerta('Recusado: '.$i['motivo_recusa']),
+                                (bool) $i['dias_atraso'] => TabelaInformativa::alerta("Atrasado há {$i['dias_atraso']} dia(s)"),
+                                default => 'Pendente',
+                            },
+                        ]),
+                        'Nenhum item nesta cobrança.',
+                    ))]),
             ])
             ->defaultSort('created_at', 'desc');
     }

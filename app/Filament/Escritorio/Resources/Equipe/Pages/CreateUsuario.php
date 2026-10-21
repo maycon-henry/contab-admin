@@ -20,7 +20,7 @@ class CreateUsuario extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         try {
-            return app(ConvidarUsuario::class)->executar(auth()->user(), $data['name'], $data['email'], TipoUsuario::from($data['tipo']), perfis: $data['perfis'] ?? []);
+            return app(ConvidarUsuario::class)->executar(auth()->user(), $data['name'], $data['email'], TipoUsuario::from($data['tipo']), atribuicoes: $data['atribuicoes'] ?? []);
         } catch (RegraDeNegocioException $e) {
             Notification::make()->danger()->title($e->getMessage())->send();
             $this->halt();

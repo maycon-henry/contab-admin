@@ -12,6 +12,7 @@ use App\Enums\ResultadoCertidao;
 use App\Enums\SituacaoItem;
 use App\Enums\TipoItem;
 use App\Filament\Support\Acao;
+use App\Filament\Support\TabelaInformativa;
 use App\Models\Documento;
 use App\Models\ItemCompetencia;
 use Filament\Actions\Action;
@@ -102,9 +103,32 @@ final class AcoesItem
     {
         return Action::make('arquivos')
             ->label('Arquivos e histórico')->icon('heroicon-o-paper-clip')->color('gray')
-            ->modalHeading(fn (ItemCompetencia $record) => $record->nome)
+            ->modalHeading(fn (ItemCompetencia $record) => $record->nome)->modalWidth('3xl')
             ->modalSubmitAction(false)->modalCancelActionLabel('Fechar')
-            ->schema(fn (ItemCompetencia $record) => [Text::make(new HtmlString(self::linksArquivos($record).self::historico($record)))]);
+            ->schema(fn (ItemCompetencia $record) => array_filter([
+                Text::make(new HtmlString('<strong>Arquivos enviados</strong>')),
+                Text::make(self::tabelaArquivos($record)),
+                $record->avaliacoes()->exists() ? Text::make(new HtmlString('<strong>Avaliações</strong>')) : null,
+                $record->avaliacoes()->exists() ? Text::make(self::historico($record)) : null,
+            ]));
+    }
+
+    /** Arquivos do item em tabela (janela "Arquivos e histórico"). */
+    private static function tabelaArquivos(ItemCompetencia $item): HtmlString
+    {
+        $documentos = $item->aceito_por_validade
+            ? Documento::whereKey($item->documento_aproveitado_id)->get()
+            : $item->documentos()->latest('id')->get();
+
+        return TabelaInformativa::html(
+            ['Arquivo', 'Enviado em', 'Validade'],
+            $documentos->map(fn (Documento $d) => [
+                new HtmlString('<a style="color:#0284c7;text-decoration:underline" target="_blank" href="'.e($d->urlTemporaria()).'">'.e($d->nome_original).'</a>'),
+                $d->created_at->format('d/m/Y H:i'),
+                $d->validade?->format('d/m/Y') ?? '—',
+            ]),
+            'Nenhum arquivo enviado.',
+        );
     }
 
     public static function linksArquivos(ItemCompetencia $item): string
@@ -125,17 +149,19 @@ final class AcoesItem
             .'</ul>';
     }
 
-    private static function historico(ItemCompetencia $item): string
+    /** RN-655 — o nome do avaliador só aparece para o escritório. */
+    private static function historico(ItemCompetencia $item): HtmlString
     {
-        $avaliacoes = $item->avaliacoes()->with('user')->get();
+        $equipe = auth()->user()->ehDaEquipe();
 
-        if ($avaliacoes->isEmpty()) {
-            return '';
-        }
-
-        return '<p style="margin-top:1rem"><strong>Avaliações:</strong></p><ul style="list-style:disc;padding-left:1.2rem">'
-            .$avaliacoes->map(fn ($a) => '<li>'.$a->created_at->format('d/m/Y H:i').' — '.e(SituacaoItem::tryFrom($a->resultado)?->getLabel() ?? $a->resultado)
-                .(auth()->user()->ehDaEquipe() ? ' por '.e($a->user?->name) : '').($a->motivo_recusa ? ': '.e($a->motivo_recusa->getLabel()) : '').($a->complemento ? ' — '.e($a->complemento) : '').'</li>')->implode('')
-            .'</ul>';
+        return TabelaInformativa::html(
+            array_values(array_filter(['Data', 'Resultado', $equipe ? 'Avaliador' : null, 'Motivo'])),
+            $item->avaliacoes()->with('user')->get()->map(fn ($a) => array_values(array_filter([
+                $a->created_at->format('d/m/Y H:i'),
+                SituacaoItem::tryFrom($a->resultado)?->getLabel() ?? $a->resultado,
+                $equipe ? ($a->user?->name ?? '—') : false,
+                trim(($a->motivo_recusa ? $a->motivo_recusa->getLabel() : '').($a->complemento ? ' — '.$a->complemento : ''), ' —') ?: '—',
+            ], fn ($v) => $v !== false))),
+        );
     }
 }

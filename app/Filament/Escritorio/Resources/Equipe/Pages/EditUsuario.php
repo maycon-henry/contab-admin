@@ -2,8 +2,8 @@
 
 namespace App\Filament\Escritorio\Resources\Equipe\Pages;
 
-use App\Actions\Usuarios\DefinirPerfis;
-use App\Enums\Perfil;
+use App\Actions\Usuarios\DefinirAtribuicoes;
+use App\Enums\Atribuicao;
 use App\Exceptions\RegraDeNegocioException;
 use App\Filament\Escritorio\Resources\Equipe\UsuarioResource;
 use Filament\Notifications\Notification;
@@ -18,7 +18,7 @@ class EditUsuario extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $data['perfis'] = array_map(fn (Perfil $p) => $p->value, DefinirPerfis::perfisDe($this->getRecord()));
+        $data['atribuicoes'] = array_map(fn (Atribuicao $a) => $a->value, DefinirAtribuicoes::atribuicoesDe($this->getRecord()));
 
         return $data;
     }
@@ -26,10 +26,10 @@ class EditUsuario extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         try {
-            // RN-234 — tipo e perfis passam a valer imediatamente
+            // RN-234 — tipo e atribuições passam a valer imediatamente
             return DB::transaction(function () use ($record, $data) {
                 $record->update(Arr::only($data, ['name', 'tipo']));
-                app(DefinirPerfis::class)->executar($record, $data['perfis'] ?? []);
+                app(DefinirAtribuicoes::class)->executar($record, $data['atribuicoes'] ?? []);
 
                 return $record;
             });

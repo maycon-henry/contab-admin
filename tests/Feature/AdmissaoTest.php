@@ -4,6 +4,7 @@ use App\Actions\Admissao\AssumirAdmissao;
 use App\Actions\Admissao\AtualizarDocumentosDoFuncionario;
 use App\Actions\Admissao\AvaliarDocumentoAdmissao;
 use App\Actions\Admissao\ConcluirAdmissao;
+use App\Actions\Admissao\DevolverAdmissao;
 use App\Actions\Admissao\SalvarAdmissao;
 use App\Actions\Admissao\SolicitarAdmissao;
 use App\Actions\Admissao\TransferirResponsavelAdmissao;
@@ -219,4 +220,36 @@ it('troca documento pela tela "Atualizar documentos" do portal', function () {
     expect($novo->nome_original)->toBe('conta-de-luz.pdf')
         ->and($novo->avaliacao)->toBeNull()
         ->and($admitido->documentos()->count())->toBe($quantidade);
+});
+
+it('devolve à empresa marcando os documentos com problema e o motivo de cada um (RN-593, RN-595)', function () {
+    Notification::fake();
+    $contrato = Contrato::withoutGlobalScopes()->where('situacao', SituacaoContrato::EmAnalise)->whereNotNull('responsavel_id')->first();
+    $comprovante = $contrato->documentos()->withoutGlobalScopes()->where('substituido', false)->where('tipo', 'comprovante_residencia')->first()
+        ?? $contrato->documentos()->withoutGlobalScopes()->where('substituido', false)->first();
+    $responsavel = User::find($contrato->responsavel_id);
+
+    $this->actingAs($responsavel);
+    Filament::setCurrentPanel(Filament::getPanel('escritorio'));
+
+    Livewire::test(ViewAdmissao::class, ['record' => $contrato->id])
+        ->callAction('devolver', [
+            'documentos' => [$comprovante->id => ['recusar' => true, 'motivo' => 'vencido', 'complemento' => 'Comprovante com mais de 90 dias']],
+            'motivo' => '',
+        ])
+        ->assertHasNoActionErrors();
+
+    $comprovante->refresh();
+    $contrato->refresh();
+    expect($comprovante->avaliacao)->toBe('recusado')
+        ->and($comprovante->motivo_recusa)->toBe('Documento vencido — Comprovante com mais de 90 dias')
+        ->and($contrato->situacao)->toBe(SituacaoContrato::Devolvida)
+        ->and($contrato->motivo_devolucao)->toContain('Documentos recusados')->toContain('Comprovante com mais de 90 dias');
+});
+
+it('não devolve sem documento marcado nem motivo (RN-595)', function () {
+    $contrato = Contrato::withoutGlobalScopes()->where('situacao', SituacaoContrato::EmAnalise)->whereNotNull('responsavel_id')->first();
+
+    expect(fn () => app(DevolverAdmissao::class)->executar($contrato, $this->daniela, '', []))
+        ->toThrow(RegraDeNegocioException::class);
 });

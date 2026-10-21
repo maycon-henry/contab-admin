@@ -9,6 +9,7 @@ use App\Domain\Consultas\PendenciasDaEmpresa;
 use App\Enums\DocumentoAdmissao;
 use App\Enums\Permissao;
 use App\Enums\SituacaoContrato;
+use App\Filament\Compartilhado\AcaoEnviarDocumentoDoItem;
 use App\Filament\Compartilhado\CampoMoeda;
 use App\Filament\Empresa\Resources\Funcionarios\CadastroFuncionarioResource;
 use App\Filament\Escritorio\Resources\FilaAvaliacao\FilaAvaliacaoResource;
@@ -68,6 +69,11 @@ class AcoesPendentes extends TableWidget
                     ->color(fn (string $state) => $state === 'Empresa' ? 'warning' : 'info'),
             ])
             ->recordActions([
+                // RN-646 — o próprio escritório envia o documento devido; ele já fica aceito
+                AcaoEnviarDocumentoDoItem::make(fn (array $record) => ItemCompetencia::with('competencia', 'tipoDocumento')->findOrFail($record['id']))
+                    ->label('Enviar documento')->color('success')
+                    ->visible(fn (array $record) => $record['tipo'] === self::DOCUMENTO_EMPRESA && auth()->user()->can(Permissao::DocumentosAvaliar->value)),
+
                 // documentos que a empresa deve: cobrar agora (RN-1321)
                 Action::make('cobrar')->label('Cobrar empresa')->icon('heroicon-o-envelope')->button()->color('warning')
                     ->visible(fn (array $record) => $record['tipo'] === self::DOCUMENTO_EMPRESA && auth()->user()->can(Permissao::CobrancaGerenciar->value))

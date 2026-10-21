@@ -1,7 +1,7 @@
 <?php
 
-use App\Actions\Usuarios\DefinirPerfis;
-use App\Enums\Perfil;
+use App\Actions\Usuarios\DefinirAtribuicoes;
+use App\Enums\Atribuicao;
 use App\Enums\SituacaoContrato;
 use App\Exceptions\RegraDeNegocioException;
 use App\Filament\Compartilhado\ArquivosLoteRelationManager;
@@ -93,17 +93,17 @@ it('renderiza abas e widgets do painel do escritório', function () {
     Livewire::test(EmpresasDevendoDocumentacao::class)->assertOk()->assertSee('Construtora Alicerce');
 });
 
-it('restringe o colaborador às permissões do perfil', function () {
+it('restringe o colaborador às permissões das suas atribuições', function () {
     entrarComo($this->colaborador);
 
     $empresa = Empresa::where('cnpj', 'like', '22333444%')->first();
 
     foreach (['/admin', '/admin/empresas', '/admin/fila-de-avaliacao', '/admin/admissoes',
-        "/admin/empresa/{$empresa->id}/notas-fiscais-entrada", "/admin/empresa/{$empresa->id}/cadastro"] as $pagina) {
+        "/admin/empresa/{$empresa->id}/notas-fiscais", "/admin/empresa/{$empresa->id}/cadastro"] as $pagina) {
         expect($this->get($pagina)->status())->toBe(200, "Falhou: {$pagina}");
     }
 
-    // exclusivas do administrador (RN-223) e fora do perfil Colaborador (D4)
+    // exclusivas do administrador (RN-223) e atribuições que ele não tem
     foreach (['/admin/equipe', '/admin/configuracoes', '/admin/catalogo-documentos', '/admin/relatorios/admissoes', '/admin/acessos', '/admin/cobrancas'] as $pagina) {
         expect($this->get($pagina)->status())->toBe(403, "Deveria bloquear: {$pagina}");
     }
@@ -130,6 +130,11 @@ it('abre o portal da empresa e isola as empresas', function () {
         "/portal/{$demo->id}/admissoes/create", "/portal/{$demo->id}/admissoes/{$rascunho->id}/edit",
         "/portal/{$demo->id}/admissoes/{$emAnalise->id}", "/portal/{$demo->id}/funcionarios", "/portal/{$demo->id}/dados-da-empresa",
     ];
+
+    // o histórico de envios fica dentro da tela de Notas Fiscais, não no menu
+    $this->get("/portal/{$demo->id}/notas-fiscais")->assertOk()
+        ->assertSee('Enviar XMLs')->assertSee('Histórico de envios')->assertSee("/portal/{$demo->id}/envios-xml", false)
+        ->assertDontSee('Envios de XML');
 
     foreach ($paginas as $pagina) {
         expect($this->get($pagina)->status())->toBe(200, "Falhou: {$pagina}");
@@ -168,33 +173,40 @@ it('abre o contexto da empresa com o menu próprio (notas, funcionários, cadast
     // selecionar a empresa abre a Página da Empresa (ações pendentes)
     $this->get($base)->assertOk()->assertSee('Página da Empresa');
 
-    $pagina = $this->get("{$base}/notas-fiscais-entrada")->assertOk();
-    foreach (['Notas Fiscais de Entrada', 'Notas Fiscais de Saída', 'Funcionários', 'Cadastro da Empresa'] as $item) {
+    $pagina = $this->get("{$base}/notas-fiscais")->assertOk();
+    foreach (['Notas Fiscais', 'Funcionários', 'Cadastro da Empresa'] as $item) {
         $pagina->assertSee($item);
     }
+    // entrada e saída numa lista só: não há mais um item de menu para cada
+    $pagina->assertDontSee('Notas Fiscais de Entrada')->assertDontSee('Notas Fiscais de Saída');
     // o menu do contexto não mistura o trabalho geral do escritório
     $pagina->assertDontSee('Fila de avaliação');
     // o logo "Contab Admin" volta para a tela inicial do escritório
     expect($pagina->getContent())->toMatch('#<a[^>]+href="'.preg_quote(url('/admin'), '#').'"#');
 
-    foreach (["{$base}/notas-fiscais-saida", "{$base}/funcionarios", "{$base}/cadastro", "{$base}/envios-xml", "{$base}/envios-xml/{$lote->id}"] as $url) {
+    foreach (["{$base}/funcionarios", "{$base}/cadastro", "{$base}/envios-xml", "{$base}/envios-xml/{$lote->id}"] as $url) {
         expect($this->get($url)->status())->toBe(200, "Falhou: {$url}");
     }
 
-    // entrada e saída separadas (RN-716)
-    $this->get("{$base}/notas-fiscais-entrada")->assertSee('Fornecedor Atacadista')->assertDontSee('Cliente Consumidor');
-    $this->get("{$base}/notas-fiscais-saida")->assertSee('Cliente Consumidor')->assertDontSee('Fornecedor Atacadista');
+    // a lista traz entradas e saídas; as abas separam (RN-716)
+    $this->get("{$base}/notas-fiscais")->assertSee('Fornecedor Atacadista')->assertSee('Cliente Consumidor');
+    $this->get("{$base}/notas-fiscais?tab=entrada")->assertSee('Fornecedor Atacadista')->assertDontSee('Cliente Consumidor');
+    $this->get("{$base}/notas-fiscais?tab=saida")->assertSee('Cliente Consumidor')->assertDontSee('Fornecedor Atacadista');
+
+    // endereços antigos continuam funcionando
+    $this->get("{$base}/notas-fiscais-entrada")->assertRedirect("{$base}/notas-fiscais?tab=entrada");
+    $this->get("{$base}/notas-fiscais-saida")->assertRedirect("{$base}/notas-fiscais?tab=saida");
 
     // empresa de outro escritório não abre (RN-100)
     $outra = Empresa::withoutGlobalScopes()->where('razao_social', 'Mercadinho Horizonte Ltda')->first();
-    expect($this->get("/admin/empresa/{$outra->id}/notas-fiscais-entrada")->status())->toBeIn([403, 404]);
+    expect($this->get("/admin/empresa/{$outra->id}/notas-fiscais")->status())->toBeIn([403, 404]);
 });
 
 it('não deixa o usuário da empresa entrar no contexto da empresa do escritório', function () {
     entrarComo($this->usuarioEmpresa);
     $empresa = Empresa::withoutGlobalScopes()->where('cnpj', 'like', '22333444%')->first();
 
-    expect($this->get("/admin/empresa/{$empresa->id}/notas-fiscais-entrada")->status())->toBe(403);
+    expect($this->get("/admin/empresa/{$empresa->id}/notas-fiscais")->status())->toBe(403);
 });
 
 it('abre o cadastro do funcionário dentro do contexto da empresa, com o menu da empresa', function () {
@@ -210,52 +222,64 @@ it('abre o cadastro do funcionário dentro do contexto da empresa, com o menu da
     foreach (["{$base}/funcionarios/cadastro/{$contrato->id}", "{$base}/funcionarios/cadastro/{$contrato->id}/edit"] as $pagina) {
         $resposta = $this->get($pagina);
         expect($resposta->status())->toBe(200, "Falhou: {$pagina}");
-        $resposta->assertSee('Notas Fiscais de Entrada')->assertSee('Despesas')->assertDontSee('Fila de admissões');
+        $resposta->assertSee('Notas Fiscais')->assertSee('Despesas')->assertDontSee('Fila de admissões');
     }
 
     // contrato de outra empresa não abre no contexto desta
     expect($this->get("{$base}/funcionarios/cadastro/{$outro->id}")->status())->toBe(404);
 });
 
-it('soma as permissões dos perfis do colaborador (RN-220 a RN-224)', function () {
-    $operacional = $this->colaborador; // só Operacional
-    $acumula = User::where('email', 'daniela@contab.test')->first(); // Operacional + Financeiro
+it('soma as permissões das atribuições do colaborador (RN-220 a RN-224)', function () {
+    $operacional = $this->colaborador; // empresas, portal, admissões, documentos e notas
+    $tudo = User::where('email', 'daniela@contab.test')->first(); // todas as atribuições
     $empresa = Empresa::where('cnpj', 'like', '22333444%')->first();
 
     setPermissionsTeamId($operacional->escritorio_id);
-    expect(DefinirPerfis::perfisDe($operacional))->toBe([Perfil::Operacional])
+    expect(DefinirAtribuicoes::atribuicoesDe($operacional))->toContain(Atribuicao::Admissoes)->not->toContain(Atribuicao::Despesas)
         ->and($operacional->can('despesas.gerenciar'))->toBeFalse()
-        ->and($acumula->can('despesas.gerenciar'))->toBeTrue()
-        ->and($acumula->can('admissoes.analisar'))->toBeTrue()
-        ->and($acumula->can('equipe.gerenciar'))->toBeFalse(); // exclusiva do administrador (RN-223)
+        ->and($operacional->can('admissoes.analisar'))->toBeTrue()
+        ->and($tudo->can('despesas.gerenciar'))->toBeTrue()
+        ->and($tudo->can('funcionarios.dados_sensiveis'))->toBeTrue()
+        ->and($tudo->can('catalogo.gerenciar'))->toBeTrue()
+        ->and($tudo->can('equipe.gerenciar'))->toBeFalse() // exclusiva do administrador (RN-223)
+        ->and($tudo->can('escritorio.configurar'))->toBeFalse();
 
-    // colaborador precisa de ao menos um perfil
-    expect(fn () => app(DefinirPerfis::class)->executar($operacional, []))
+    // colaborador precisa de ao menos uma atribuição
+    expect(fn () => app(DefinirAtribuicoes::class)->executar($operacional, []))
         ->toThrow(RegraDeNegocioException::class);
 
-    entrarComo($acumula);
+    // só financeiro e despesas: cobra e lança despesas, mas não analisa admissões
+    app(DefinirAtribuicoes::class)->executar($operacional, [Atribuicao::Cobranca, Atribuicao::Despesas]);
+    expect($operacional->fresh()->can('admissoes.analisar'))->toBeFalse()
+        ->and($operacional->fresh()->can('empresas.visualizar'))->toBeTrue(); // consulta básica de todo colaborador
+
+    entrarComo($tudo);
     expect($this->get('/admin/cobrancas')->status())->toBe(200)
-        ->and($this->get("/admin/empresa/{$empresa->id}/despesas")->status())->toBe(200);
+        ->and($this->get('/admin/catalogo-documentos')->status())->toBe(200)
+        ->and($this->get('/admin/relatorios/admissoes')->status())->toBe(200)
+        ->and($this->get("/admin/empresa/{$empresa->id}/despesas")->status())->toBe(200)
+        ->and($this->get('/admin/equipe')->status())->toBe(403);
 });
 
-it('convida colaborador com mais de um perfil e altera os perfis pela tela da equipe', function () {
+it('convida colaborador com atribuições e altera as atribuições pela tela da equipe', function () {
     entrarComo($this->admin);
     Filament::setCurrentPanel(Filament::getPanel('escritorio'));
 
     Livewire::test(CreateUsuario::class)
-        ->fillForm(['name' => 'Gabriel Finanças', 'email' => 'gabriel@contab.test', 'tipo' => 'colaborador', 'perfis' => ['Operacional', 'Financeiro']])
+        ->fillForm(['name' => 'Gabriel Admissões', 'email' => 'gabriel@contab.test', 'tipo' => 'colaborador', 'atribuicoes' => ['admissoes']])
         ->call('create')->assertHasNoFormErrors();
 
     $gabriel = User::where('email', 'gabriel@contab.test')->first();
-    expect(DefinirPerfis::perfisDe($gabriel))->toHaveCount(2);
+    expect(DefinirAtribuicoes::atribuicoesDe($gabriel))->toBe([Atribuicao::Admissoes]);
 
     Livewire::test(EditUsuario::class, ['record' => $gabriel->id])
-        ->assertFormSet(fn (array $state) => expect($state['perfis'])->toEqualCanonicalizing(['Operacional', 'Financeiro']) ? [] : [])
-        ->fillForm(['perfis' => ['Financeiro']])->call('save')->assertHasNoFormErrors();
+        ->assertFormSet(['atribuicoes' => [Atribuicao::Admissoes]])
+        ->fillForm(['atribuicoes' => ['cobranca', 'despesas']])->call('save')->assertHasNoFormErrors();
 
-    expect(DefinirPerfis::perfisDe($gabriel->fresh()))->toBe([Perfil::Financeiro]);
+    expect(DefinirAtribuicoes::atribuicoesDe($gabriel->fresh()))->toBe([Atribuicao::Cobranca, Atribuicao::Despesas]);
 
-    $this->get('/admin/equipe')->assertOk()->assertSee('Operacional')->assertSee('Financeiro')->assertSee('Acesso total');
+    $this->get('/admin/equipe')->assertOk()
+        ->assertSee('Admissões e desligamentos')->assertSee('Todas as atribuições')->assertSee('Acesso total');
 });
 
 it('fecha o painel de filtros ao aplicar os filtros', function () {
@@ -265,4 +289,26 @@ it('fecha o painel de filtros ao aplicar os filtros', function () {
     $html = Livewire::test(ListFilaAvaliacao::class)->html();
 
     expect($html)->toMatch('/data-table-filter-action="apply"[^>]*x-on:click="\$wire\.applyTableFilters\(\); \$el\.closest\(\'\.fi-dropdown\'\) && close\(\)"/');
+});
+
+it('mostra as ações das linhas só com ícone, com nome e descrição no tooltip', function () {
+    entrarComo($this->admin);
+    Filament::setCurrentPanel(Filament::getPanel('escritorio'));
+
+    $html = Livewire::test(ListFilaAvaliacao::class)->html();
+
+    expect($html)->toContain('fi-icon-btn')
+        ->and($html)->toContain('Aceitar: Aceita o documento como correto e válido.')
+        ->and($html)->toContain('Recusar: Recusa o documento e avisa a empresa do motivo.')
+        ->and($html)->not->toMatch('/<a[^>]*fi-link[^>]*>\s*(<[^>]+>\s*)*Arquivos e histórico/');
+});
+
+it('mostra as janelas informativas em tabela, com cabeçalho e colunas separadas', function () {
+    entrarComo($this->admin);
+    Filament::setCurrentPanel(Filament::getPanel('escritorio'));
+    $padaria = Empresa::where('cnpj', 'like', '33444555%')->first();
+
+    Livewire::test(EmpresasDevendoDocumentacao::class)
+        ->mountTableAction('quais', $padaria)
+        ->assertMountedActionModalSeeHtml(['<thead', 'Competência', 'Atraso', 'dia(s)']);
 });

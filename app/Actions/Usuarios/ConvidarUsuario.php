@@ -2,7 +2,7 @@
 
 namespace App\Actions\Usuarios;
 
-use App\Enums\Perfil;
+use App\Enums\Atribuicao;
 use App\Enums\Permissao;
 use App\Enums\TipoUsuario;
 use App\Exceptions\RegraDeNegocioException;
@@ -14,13 +14,13 @@ use Illuminate\Support\Str;
 /** regras.md RN-230, RN-231, RN-232, RN-242. */
 class ConvidarUsuario
 {
-    public function __construct(private readonly DefinirPerfis $definirPerfis) {}
+    public function __construct(private readonly DefinirAtribuicoes $definirAtribuicoes) {}
 
     /**
      * @param  array<int>  $empresas  ids das empresas (usuário da empresa)
-     * @param  array<Perfil|string>  $perfis  perfis do colaborador (RN-220)
+     * @param  array<Atribuicao|string>  $atribuicoes  atribuições do colaborador (RN-220)
      */
-    public function executar(User $convidante, string $nome, string $email, TipoUsuario $tipo, array $empresas = [], array $perfis = []): User
+    public function executar(User $convidante, string $nome, string $email, TipoUsuario $tipo, array $empresas = [], array $atribuicoes = []): User
     {
         if ($tipo->ehEquipe()) {
             RegraDeNegocioException::se(! $convidante->can(Permissao::EquipeGerenciar->value), 'Somente administradores convidam pessoas da equipe (RN-230).');
@@ -31,7 +31,7 @@ class ConvidarUsuario
 
         RegraDeNegocioException::se(User::where('email', $email)->exists(), 'Este e-mail já está em uso (RN-202).');
 
-        return DB::transaction(function () use ($convidante, $nome, $email, $tipo, $empresas, $perfis) {
+        return DB::transaction(function () use ($convidante, $nome, $email, $tipo, $empresas, $atribuicoes) {
             $user = User::create([
                 'escritorio_id' => $convidante->escritorio_id,
                 'name' => $nome,
@@ -41,7 +41,7 @@ class ConvidarUsuario
             ]);
 
             if ($tipo === TipoUsuario::Colaborador) {
-                $this->definirPerfis->executar($user, $perfis);
+                $this->definirAtribuicoes->executar($user, $atribuicoes);
             }
 
             if ($tipo === TipoUsuario::UsuarioEmpresa) {
