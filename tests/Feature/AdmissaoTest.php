@@ -20,6 +20,7 @@ use App\Models\Empresa;
 use App\Models\User;
 use App\Notifications\AdmissaoSolicitadaNotification;
 use Database\Seeders\DesenvolvimentoSeeder;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
@@ -100,13 +101,17 @@ it('assume pela tela da fila e solicita pela tela do portal', function () {
 
     Livewire::test(ViewAdmissao::class, ['record' => $contrato->id])->assertOk()->assertSee($contrato->funcionario->nome);
 
-    // portal: devolvida → corrigir → "Solicitar admissão"
+    // portal: devolvida → corrigir → aba "Resumo e envio" → "Salvar e enviar" (RN-586)
     $this->actingAs($this->carla);
     Filament::setCurrentPanel(Filament::getPanel('portal'));
     $devolvida = Contrato::where('situacao', SituacaoContrato::Devolvida)->first();
     Filament::setTenant($devolvida->empresa);
 
-    Livewire::test(EditAdmissao::class, ['record' => $devolvida->id])->callAction('solicitar');
+    $enviar = TestAction::make('enviarParaAnalise')->schemaComponent('resumo.envio', schema: 'form');
+    Livewire::test(EditAdmissao::class, ['record' => $devolvida->id])
+        ->assertSee('Tudo pronto para enviar')
+        ->assertActionEnabled($enviar)
+        ->callAction($enviar);
 
     $devolvida->refresh();
     expect($devolvida->situacao)->toBe(SituacaoContrato::EmAnalise)
@@ -148,7 +153,8 @@ it('mostra voltar e editar na ficha e o desligamento dentro da edição', functi
     Livewire::test(App\Filament\Escritorio\Resources\Admissoes\Pages\EditAdmissao::class, ['record' => $admitido->id])
         ->assertActionVisible('iniciarDesligamento')
         ->assertSee('Funcionário admitido')
-        ->assertSee('Linha do tempo')->assertSee('Funcionário admitido por'); // aba da linha do tempo (RN-575)
+        ->assertSee('Linha do tempo')
+        ->assertSee('Funcionário admitido por'); // aba da linha do tempo (RN-575)
 
     expect((new App\Filament\Escritorio\Resources\Admissoes\Pages\EditAdmissao)->getRelationManagers())->toBe([]);
 });

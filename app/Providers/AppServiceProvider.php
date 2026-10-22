@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Auditoria\RegistrarAcesso;
 use App\Contracts\GeradorDanfe;
+use App\Contracts\LeitorDadosDeDocumento;
 use App\Enums\TipoUsuario;
 use App\Filament\Support\DescricaoAcoes;
 use App\Http\Responses\LoginResponse;
+use App\Integrations\Anthropic\LeitorDadosDeDocumentoClaude;
 use App\Integrations\Nfephp\GeradorDanfeNfephp;
 use Filament\Actions\Action;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse as LoginResponseContract;
@@ -29,6 +31,12 @@ class AppServiceProvider extends ServiceProvider
 
         // RN-743 — DANFE gerado a partir do XML (AGENTS.md 3.1: integração atrás de contrato)
         $this->app->bind(GeradorDanfe::class, GeradorDanfeNfephp::class);
+
+        // RN-579 — leitura de documentos por IA no formulário de admissão
+        $this->app->bind(LeitorDadosDeDocumento::class, fn () => new LeitorDadosDeDocumentoClaude(
+            config('services.anthropic.key'),
+            config('services.anthropic.modelo'),
+        ));
     }
 
     public function boot(): void

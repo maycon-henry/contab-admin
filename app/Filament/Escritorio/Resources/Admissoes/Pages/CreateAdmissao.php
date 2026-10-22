@@ -4,6 +4,7 @@ namespace App\Filament\Escritorio\Resources\Admissoes\Pages;
 
 use App\Actions\Admissao\SalvarAdmissao;
 use App\Exceptions\RegraDeNegocioException;
+use App\Filament\Compartilhado\Concerns\FormularioDeAdmissao;
 use App\Filament\Compartilhado\FormularioAdmissao;
 use App\Filament\Escritorio\Resources\Admissoes\AdmissaoResource;
 use App\Models\Empresa;
@@ -16,7 +17,16 @@ use Illuminate\Database\Eloquent\Model;
 /** RN-581 — o escritório inicia a admissão em nome da empresa (começa em rascunho). */
 class CreateAdmissao extends CreateRecord
 {
+    use FormularioDeAdmissao;
+
     protected static string $resource = AdmissaoResource::class;
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->abrirAvisoPreenchimentoAutomatico();
+    }
 
     public function form(Schema $schema): Schema
     {

@@ -44,6 +44,7 @@ class Contrato extends Model
             'atendimento_iniciado_em' => 'datetime',
             'admitido_em' => 'datetime',
             'desligado_em' => 'datetime',
+            'formulario_salvo_em' => 'datetime',
         ];
     }
 
@@ -75,6 +76,12 @@ class Contrato extends Model
     public function admitidoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'admitido_por_id');
+    }
+
+    /** RN-550 — quem salvou a última versão do formulário (empresa ou escritório). */
+    public function formularioSalvoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'formulario_salvo_por_id');
     }
 
     public function historicos(): HasMany

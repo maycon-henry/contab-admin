@@ -10,7 +10,7 @@ use App\Models\Contrato;
 use App\Models\Documento;
 use App\Models\User;
 
-/** regras.md RN-593 — cada documento é aceito ou recusado (com motivo). */
+/** regras.md RN-593 — cada documento é aceito ou recusado (com motivo), registrando quem avaliou e quando. */
 class AvaliarDocumentoAdmissao
 {
     public function executar(Documento $documento, User $user, bool $aceito, ?string $motivo = null): void
@@ -28,6 +28,9 @@ class AvaliarDocumentoAdmissao
         $documento->update([
             'avaliacao' => $aceito ? 'aceito' : 'recusado',
             'motivo_recusa' => $aceito ? null : $motivo,
+            // quem do escritório aceitou ou recusou, e quando
+            'avaliado_por_id' => $user->id,
+            'avaliado_em' => now(),
         ]);
 
         if ($docDeAdmitidoEmAnalise) {

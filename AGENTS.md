@@ -26,6 +26,7 @@ Regras de **negócio** ficam em [regras.md](regras.md). Em caso de conflito, `re
 | Testes | Pest |
 | Qualidade | Laravel Pint, Larastan (PHPStan nível 8+) |
 | Containers | Docker + Docker Compose (container `app` e container `db`) |
+| IA (leitura de documentos) | API da Anthropic (Claude) com o SDK `anthropic-ai/sdk`, atrás de `App\Contracts\LeitorDadosDeDocumento` (`docs/adr/0002-leitura-de-documentos-por-ia.md`) |
 
 > Mudanças de stack exigem registro em `docs/adr/` (Architecture Decision Record).
 
@@ -111,7 +112,7 @@ docker compose exec app php artisan filament:assets
 Filament (Resources/Pages) · Livewire · Controllers API
         │  só validam entrada, autorizam (Policy) e formatam saída
         ▼
-Actions (app/Actions)           ← um caso de uso por classe, método handle()
+Actions (app/Actions)           ← um caso de uso por classe, método executar() (criar()/atualizar() nas que salvam cadastro)
         │
         ▼
 Domínio (Models, Enums, Value Objects, Services de domínio)
@@ -280,6 +281,8 @@ Regras:
 - Um único model `Documento`, polimórfico (`documentavel_type`/`documentavel_id`), serve empresas, funcionários e contratos.
 - Os tipos de documento e as regras de obrigatoriedade do checklist (sempre / conforme o caso / opcional) ficam em tabela de referência, com a condição avaliada por código de domínio — não espalhar `if`s de checklist pelas telas.
 - Substituir um documento cria nova versão; a anterior é mantida (RN-562).
+- Documentos do funcionário (`regras.md` RN-568): `documentos.funcionario_id` junta os documentos de todos os contratos, e `hash` (SHA-256), `mime` e `tamanho` registram o arquivo. Tudo é preenchido no evento `creating` do model `Documento`, então nenhuma Action precisa se lembrar disso. O arquivo não muda de lugar depois de gravado (o caminho é estável, como o XML das notas): a organização em pastas fica no banco e no dossiê.
+- Grupo e nome de cada tipo de documento do funcionário: `App\Enums\GrupoDocumentoFuncionario` (tela e dossiê usam a mesma classificação). Tela: `TabelaDocumentosFuncionario` (painéis `empresa` e `portal`); dossiê `.zip`: Action `GerarDossieFuncionario` (RN-573).
 
 ### 5.2.1 Responsáveis pela admissão e relatórios
 
@@ -288,6 +291,14 @@ Regras:
 - Chaves estrangeiras para `users` sem `cascade` (usuários nunca são excluídos — RN-233).
 - O histórico de transições (RN-575) continua sendo a fonte do detalhe (transferências, devoluções); a contagem de devoluções do relatório (RN-553) vem dele.
 - Índices: `contratos (escritorio_id, admitido_por_id, admitido_em)` e `contratos (escritorio_id, atendimento_iniciado_por_id, atendimento_iniciado_em)`.
+- `contratos.formulario_salvo_por_id`/`formulario_salvo_em` (quem salvou a última versão do formulário) é a exceção: é atualizado a cada salvamento, por `SalvarAdmissao::registrarQuemSalvou()`. `documentos.avaliado_por_id`/`avaliado_em` são preenchidos só por `AvaliarDocumentoAdmissao`.
+
+### 5.2.2 Preenchimento automático da admissão (`regras.md` RN-579)
+
+- Fluxo: `FileUpload` do checklist → `afterStateUpdated` → Action `PreencherComDocumento` → contrato `LeitorDadosDeDocumento` (implementação `App\Integrations\Anthropic\LeitorDadosDeDocumentoClaude`, structured outputs) → domínio `PreenchimentoAutomatico` (o que cada documento pode preencher, validação e "só campos vazios"). A Action não grava nada; devolve os campos para a tela (e, no futuro, para a API).
+- Configuração: `ANTHROPIC_API_KEY` e `ANTHROPIC_MODELO` (`config/services.php`). Sem chave, `disponivel()` é `false`: não há janela de aviso nem leitura.
+- Testes nunca chamam a API: troque o contrato por um leitor falso (`app()->instance(LeitorDadosDeDocumento::class, ...)`).
+- O resumo da última aba vem de `App\Domain\Admissao\ResumoAdmissao`, que usa os mesmos obrigatórios de `VerificadorAdmissao` (`OBRIGATORIOS_PESSOAIS`, `OBRIGATORIOS_CONTRATO`).
 - Relatórios seguem o mesmo padrão dos dashboards: classe de consulta de domínio (ex.: `RelatorioAdmissoesPorColaborador`) com agregação em SQL, usada pela página do Filament e pelo endpoint da API; acesso por permissão (`relatorios.admissoes`).
 
 ### 5.3 Notas fiscais (importação de XML)
@@ -349,6 +360,20 @@ Regras:
   ```
 - Não desabilitar testes, regras do PHPStan ou Pint para "fazer passar". Corrigir a causa.
 
+### 8.1 Padrão de qualidade e agentes
+
+- O padrão de código (SOLID, design patterns, clean code e testes aplicados a esta arquitetura) está na skill **`.claude/skills/qualidade-codigo/`**: `SKILL.md` (onde cada coisa mora e regras de ouro) e `referencias/` (SOLID, catálogo de padrões, pirâmide de testes e checklist de revisão). Vale para qualquer agente ou pessoa.
+- Testes em três suítes: **`tests/Unit`** (domínio, sem banco — toda classe nova de `app/Domain` tem teste unitário próprio em `tests/Unit/<Modulo>/<Classe>Test.php`), **`tests/Arch`** (regras de arquitetura com `arch()` do Pest, conferidas a cada execução) e **`tests/Feature`** (Actions, autorização e telas).
+- Agentes do Claude Code em `.claude/agents/`:
+
+  | Agente | Quando usar |
+  |---|---|
+  | `arquiteto` | antes de implementar algo que toca mais de uma camada: devolve o plano (arquivos, padrões, RNs, testes). Não edita. |
+  | `testador` | depois de implementar: escreve e roda os testes unitários, de feature e de arquitetura. |
+  | `revisor` | antes de commit/PR: revisa o diff contra este arquivo, o `regras.md` e a skill, e roda Pint e Pest. Não edita. |
+
+- Fluxo sugerido para funcionalidade nova: `arquiteto` → implementação → `testador` → `revisor`. Para mudanças pequenas, basta seguir a skill e rodar Pint e Pest.
+
 ## 9. Front-end web
 
 - Priorizar componentes nativos do Filament (tabelas, formulários, filtros, actions, widgets) antes de criar telas customizadas.
@@ -384,6 +409,8 @@ Regras:
 - Em testes, o Filament guarda o menu montado do painel no processo: num mesmo teste, ao fazer `get()` em páginas de **painéis diferentes**, verifique o menu na primeira requisição.
 - Em testes, depois de um `get()` numa página de painel com tenant (`empresa`, `portal`), o filtro de tenant do Filament continua ativo nos models durante o resto do teste. Faça as consultas de preparação **antes** das requisições.
 - Telas reaproveitadas entre painéis (ex.: ficha da admissão no painel `empresa`) montam URLs com `static::getResource()::getUrl(...)`, nunca com o nome fixo de um Resource de outro painel.
+- **Não use `Tabs::livewireProperty()` em formulários com `FileUpload`:** com ela só a aba ativa é renderizada, e ao trocar de aba o FilePond é recriado e o anexo some da tela. O `FormularioAdmissao` usa abas no navegador (`persistTabInQueryString('aba')`); o Resumo se atualiza sozinho com `x-intersect="$wire.$refresh()"`, que envia junto o que foi digitado. Ações dentro de uma aba são chamadas em testes com `TestAction::make(...)->schemaComponent('resumo.envio', schema: 'form')`.
+- `View::make()->viewData(...)` avalia **uma closure que devolve o array inteiro** (`fn (Get $get) => ['chave' => ...]`), não closures por chave.
 - No PostgreSQL, uma violação de índice único dentro de transação invalida a transação inteira: quem depende de capturar `UniqueConstraintViolationException` deve envolver o insert em `DB::transaction()` (savepoint).
 
 ## 12. Pendências técnicas da versão inicial
@@ -396,6 +423,8 @@ Itens que este documento exige e que ainda **não** foram implementados — deve
 - **Auditoria completa** (`regras.md` RN-1300, RN-571): existem históricos específicos (admissão, avaliações, cobranças, acessos, mudança de competência de nota), mas não um registro genérico de "antes/depois" de todas as entidades.
 - **Bloqueio de 15 min após 5 tentativas** (RN-302): o login usa o limite padrão do Filament (5 tentativas por minuto).
 - **Política de dados sensíveis**: aplicada a salário e dados bancários do funcionário; raça/cor e ASO ainda não têm restrição própria.
+- **Transações e `DB::` em telas** (`tests/Arch`, exceções em `->ignoring()`): `ConfiguracoesEscritorio`, `EditUsuario` e `EditUsuarioEmpresa` (encerramento de sessões — RN-233) devem passar para Actions.
+- **Testes unitários do domínio**: `PreenchimentoAutomatico`, `VerificadorAdmissao`, `CalculadoraRotinaMensal`, `SelecionadorEmpresasParaCobranca` e `GrupoDocumentoFuncionario` são cobertos só por testes de feature.
 
 ## 13. O que um agente NÃO deve fazer
 

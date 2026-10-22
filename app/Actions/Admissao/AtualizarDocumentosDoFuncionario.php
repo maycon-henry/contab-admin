@@ -46,6 +46,7 @@ class AtualizarDocumentosDoFuncionario
             $alterados = $this->salvarAdmissao->sincronizarDocumentos($contrato, $user, $documentos, $nomes);
 
             if ($alterados !== []) {
+                $this->salvarAdmissao->registrarQuemSalvou($contrato, $user);
                 $contrato->registrarHistorico('documentos_atualizados',
                     'Documentos atualizados, aguardando avaliação do escritório: '.collect($alterados)->map(fn (DocumentoAdmissao $t) => $t->getLabel())->implode(', ').'.',
                     $contrato->situacao, $user);

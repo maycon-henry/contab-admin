@@ -136,6 +136,8 @@ class AdmissaoResource extends Resource
                     ->helperText(fn (Contrato $record) => $record->atendimento_iniciado_em?->format('d/m/Y H:i')),
                 TextEntry::make('admitidoPor.name')->label('Admitido por')->placeholder('—')
                     ->helperText(fn (Contrato $record) => $record->admitido_em?->format('d/m/Y H:i')),
+                TextEntry::make('formularioSalvoPor.name')->label('Última versão do formulário salva por')->placeholder('—')
+                    ->helperText(fn (Contrato $record) => $record->formulario_salvo_em?->format('d/m/Y H:i')),
             ]),
             Section::make('Contrato')->columnSpanFull()->columns(4)->schema([
                 TextEntry::make('empresa.razao_social')->label('Empresa'),

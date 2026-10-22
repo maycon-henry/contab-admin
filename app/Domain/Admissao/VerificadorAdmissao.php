@@ -16,6 +16,20 @@ class VerificadorAdmissao
     /** Salário mínimo nacional usado no alerta de RN-524. */
     public const SALARIO_MINIMO = 1518.00;
 
+    /** Dados pessoais obrigatórios para solicitar (RN-510). */
+    public const OBRIGATORIOS_PESSOAIS = [
+        'nome' => 'Nome completo', 'cpf' => 'CPF', 'data_nascimento' => 'Data de nascimento', 'sexo' => 'Sexo',
+        'raca_cor' => 'Raça/cor', 'grau_instrucao' => 'Grau de instrução', 'pais_nascimento' => 'País de nascimento',
+        'nacionalidade' => 'Nacionalidade', 'cep' => 'CEP', 'logradouro' => 'Logradouro', 'numero' => 'Número',
+        'municipio' => 'Município', 'uf' => 'UF',
+    ];
+
+    /** Dados do contrato obrigatórios para solicitar (RN-582). */
+    public const OBRIGATORIOS_CONTRATO = [
+        'data_admissao_prevista' => 'Data de admissão prevista', 'cargo' => 'Cargo', 'salario' => 'Salário',
+        'tipo_contrato' => 'Tipo de contrato', 'jornada_semanal' => 'Jornada semanal', 'estabelecimento_id' => 'Local de trabalho',
+    ];
+
     /** Pendências do que cabe à empresa preencher/anexar (RN-582, RN-583). */
     public function pendenciasDaEmpresa(Contrato $contrato): array
     {
@@ -23,23 +37,13 @@ class VerificadorAdmissao
         $f = $contrato->funcionario;
         $pendencias = [];
 
-        $obrigatoriosPessoais = [
-            'nome' => 'Nome completo', 'cpf' => 'CPF', 'data_nascimento' => 'Data de nascimento', 'sexo' => 'Sexo',
-            'raca_cor' => 'Raça/cor', 'grau_instrucao' => 'Grau de instrução', 'pais_nascimento' => 'País de nascimento',
-            'nacionalidade' => 'Nacionalidade', 'cep' => 'CEP', 'logradouro' => 'Logradouro', 'numero' => 'Número',
-            'municipio' => 'Município', 'uf' => 'UF',
-        ];
-        foreach ($obrigatoriosPessoais as $campo => $rotulo) {
+        foreach (self::OBRIGATORIOS_PESSOAIS as $campo => $rotulo) {
             if (blank($f?->{$campo})) {
                 $pendencias[] = "Dados pessoais: {$rotulo}";
             }
         }
 
-        $obrigatoriosContrato = [
-            'data_admissao_prevista' => 'Data de admissão prevista', 'cargo' => 'Cargo', 'salario' => 'Salário',
-            'tipo_contrato' => 'Tipo de contrato', 'jornada_semanal' => 'Jornada semanal', 'estabelecimento_id' => 'Local de trabalho',
-        ];
-        foreach ($obrigatoriosContrato as $campo => $rotulo) {
+        foreach (self::OBRIGATORIOS_CONTRATO as $campo => $rotulo) {
             if (blank($contrato->{$campo})) {
                 $pendencias[] = "Contrato: {$rotulo}";
             }

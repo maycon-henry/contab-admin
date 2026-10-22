@@ -47,6 +47,7 @@ final class DescricaoAcoes
         'assumir' => 'Torna você o responsável por esta admissão.',
         'visualizar' => 'Mostra o cadastro do funcionário, sem alterar.',
         'atualizar' => 'Troca ou inclui documentos do funcionário.',
+        'documentosFuncionario' => 'Todos os documentos do funcionário, organizados, e o dossiê em .zip.',
 
         // empresas e equipe
         'abrir' => 'Entra na empresa: pendências, notas, funcionários e cadastro.',

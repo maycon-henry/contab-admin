@@ -259,13 +259,21 @@ Visão geral:
   - **dados pessoais** (RN-510), **dependentes** (RN-512), **dados bancários** (RN-513), **deficiência** e **estrangeiro** (RN-514, RN-515);
   - **dados do contrato:** data de admissão prevista, cargo, salário, tipo de contrato (indeterminado, experiência — com os períodos —, prazo determinado), jornada e horário, estabelecimento (local de trabalho);
   - **documentos** do checklist (RN-526), cada um anexado ao seu item.
+- **RN-579** — **Preenchimento automático pelos documentos:** ao anexar um documento no formulário da admissão (PDF, JPG ou PNG), o sistema lê os dados pessoais com inteligência artificial e preenche **somente os campos que ainda estão vazios**; campo já preenchido (manualmente ou por outro documento) **nunca é alterado**. Cada documento só preenche o que é dele:
+  - documento de identificação com foto — nome, CPF, data de nascimento, sexo, RG/CNH, nacionalidade e país de nascimento;
+  - comprovante de residência — apenas o endereço (ele pode estar em nome de outra pessoa);
+  - certificado de reservista — nome, CPF e data de nascimento;
+  - certidão de casamento — estado civil; comprovante de escolaridade — grau de instrução;
+  - os demais (ASO, contrato, documentos de dependentes) não preenchem nada.
+
+  Valores inválidos (CPF com dígito errado, data futura, UF inexistente...) são descartados. Ao abrir "Admitir novo funcionário", uma janela explica a facilidade. Depois da leitura, o usuário vê quais campos foram preenchidos e deve conferi-los; nada é gravado até ele salvar. Se a leitura falhar, o usuário é avisado e preenche manualmente — a falha nunca impede o envio. A leitura só funciona com a integração configurada; sem ela, o formulário segue apenas manual.
 - **RN-583** — O sistema mostra à empresa, o tempo todo, a **lista de pendências**: campos obrigatórios não preenchidos e documentos obrigatórios não anexados.
 - **RN-584** — A empresa pode excluir (cancelar) uma admissão em `rascunho`. Ela vai para `admissao_cancelada`, sem justificativa obrigatória.
 - **RN-585** — Enquanto estiver em `rascunho`, a admissão **não aparece** na fila do escritório.
 
 #### Etapa 2 — Solicitar admissão (empresa)
 
-- **RN-586** — O botão **"Solicitar admissão"** só fica habilitado quando não houver pendências (RN-583).
+- **RN-586** — A última aba do formulário é o **"Resumo e envio"**: mostra todos os dados e documentos como estão na tela, com os obrigatórios faltantes destacados. O envio ao escritório é feito pelo botão **"Salvar e enviar para análise do escritório"**, no final dessa página — ele salva o formulário e solicita a admissão — e só fica habilitado quando não houver pendências (RN-583). Na tela de "Admitir novo", o mesmo botão cria a admissão e já a solicita.
 - **RN-587** — Ao solicitar, o sistema valida novamente todas as regras (idade mínima RN-511, datas de experiência RN-522, ASO RN-527, salário RN-524) e, se estiver tudo certo, a admissão passa a `em_analise` e entra na **fila de admissões** do escritório. Data/hora e usuário da solicitação são registrados.
 - **RN-588** — A partir da solicitação, a empresa **não pode mais alterar** dados nem documentos; ela apenas consulta a admissão e acompanha a situação. Para corrigir algo, deve pedir ao escritório (que pode devolver — RN-595).
 - **RN-589** — Antecedência mínima: como o registro no eSocial deve ocorrer até o dia anterior ao início do trabalho (RN-529), o sistema alerta a empresa, ao solicitar, se a data de admissão prevista estiver próxima demais. **[A DEFINIR]** antecedência mínima (sugestão: 2 dias úteis antes da data de admissão), se ela bloqueia ou só alerta, e se o escritório pode configurá-la.
@@ -278,7 +286,7 @@ Visão geral:
 
 #### Etapa 4 — Análise (escritório)
 
-- **RN-593** — Na análise, o colaborador confere os dados e **cada documento** do checklist, marcando-o como `aceito` ou `recusado` (com motivo).
+- **RN-593** — Na análise, o colaborador confere os dados e **cada documento** do checklist, marcando-o como `aceito` ou `recusado` (com motivo). Fica registrado **quem do escritório avaliou** cada documento e quando (vale também para documentos trocados de funcionário admitido — RN-567), visível para o escritório.
 - **RN-594** — O colaborador pode corrigir pequenos erros nos dados informados pela empresa sem devolver a admissão. Toda correção fica registrada no histórico (valor anterior, novo valor, quem e quando) e visível para a empresa.
 - **RN-595** — Se houver documento recusado ou dado que só a empresa pode corrigir, o colaborador **devolve** a admissão informando o motivo. Na própria tela de devolução ele marca os documentos com problema, cada um com o motivo (ilegível, diferente do solicitado, vencido ou desatualizado, incompleto, outro) e um detalhe opcional (ex.: "comprovante com mais de 90 dias"); esses documentos ficam recusados e a lista deles entra no motivo da devolução. Ela passa a `devolvida`; a empresa vê o motivo e os documentos recusados, volta a poder editar, e solicita novamente (RN-586). Na nova solicitação, a admissão volta à fila **mantendo o mesmo responsável**.
 - **RN-596** — Uma admissão `em_analise` pode ser cancelada pelo escritório (ex.: candidato desistiu), com justificativa. A empresa pode pedir o cancelamento, mas quem executa é o escritório.
@@ -379,19 +387,23 @@ Visão geral:
 - **RN-566** — Na troca, um documento nunca é removido: o novo arquivo vira a versão vigente e a anterior fica no histórico (RN-562).
 - **RN-567** — Todo documento trocado ou incluído pela empresa em funcionário admitido fica **em análise** até alguém do Operacional **aceitar ou recusar** (com motivo) na ficha do funcionário. Enquanto isso, ele aparece nas ações pendentes da Página da Empresa (RN-1521), e a empresa vê a situação de cada documento ("em análise", "aceito" ou "recusado" com o motivo). Envio e avaliação ficam na linha do tempo (RN-575).
 - **RN-564** — Além do arquivo, o ASO tem seus dados registrados (base: NR-7): tipo de exame (admissional, periódico, retorno ao trabalho, mudança de risco ocupacional, demissional), data do exame, resultado (apto/inapto), médico responsável (nome, CRM e UF), riscos ocupacionais e procedimentos realizados. Esses dados alimentam RN-527 e RN-545.
+- **RN-568** — **Documentos organizados para consulta:** todo documento do funcionário fica classificado pelo seu tipo (item do checklist da admissão ou do desligamento), ligado ao funcionário e ao contrato a que pertence, e guarda os dados do arquivo (formato, tamanho e uma impressão digital — hash — que comprova que ele não foi alterado). Assim os documentos de todos os contratos do funcionário (RN-501) podem ser consultados juntos, a qualquer tempo.
+- **RN-569** — **Documentos do funcionário:** a tela de Funcionários (escritório e portal) tem a opção **"Documentos"**, que lista todos os documentos do funcionário, de todos os contratos, agrupados em **Pessoais**, **Dependentes**, **Admissão** e **Desligamento**. Cada um mostra o arquivo (para abrir sem baixar), quando e por quem foi enviado (escritório ou empresa), a situação (em análise, aceito ou recusado com o motivo) e a validade, quando houver. Por padrão aparece só a versão vigente de cada documento; as versões anteriores (RN-562) aparecem pelo filtro. Filtros: grupo, situação e versões. Aceitar e recusar continua sendo feito na ficha do funcionário (RN-593, RN-567).
 
 ### 8.7 Acesso e LGPD
 
 - **RN-570** — São **dados sensíveis** do funcionário, visíveis apenas para usuários com permissão específica: salário e histórico salarial, dados bancários, raça/cor, ASOs e qualquer dado de saúde, documentos de justa causa.
 - **RN-571** — A visualização e o download de dados ou documentos sensíveis são registrados em auditoria.
 - **RN-572** — O usuário da empresa vê todos os dados dos funcionários da **própria** empresa, inclusive os sensíveis (a empresa é a empregadora e fornece esses dados). A restrição de RN-570 vale para a equipe do escritório. Quando houver perfis diferentes de usuário da empresa (RN-245), a mesma permissão de dados sensíveis será aplicada a eles.
+- **RN-573** — **Dossiê do funcionário:** na tela de documentos (RN-569), o botão **"Baixar dossiê (.zip)"** baixa todos os documentos do funcionário num único arquivo, em pastas: "01 Pessoais", "02 Dependentes", "03 Admissão dd-mm-aaaa" e "04 Desligamento dd-mm-aaaa" (uma pasta por contrato, em caso de recontratação), e as versões anteriores em "Versões anteriores". Cada arquivo leva o nome do documento (ex.: "ASO admissional.pdf"). Disponível para a equipe do escritório que consulta funcionários e para o usuário da empresa (RN-243), cada um só com os documentos que já pode ver (RN-904).
 
 ### 8.8 Registro do atendimento e relatório de admissões
 
 - **RN-550** — Toda admissão guarda, de forma permanente, os **responsáveis por cada etapa**:
   - **solicitada por** — usuário que solicitou a admissão (da empresa ou do escritório — RN-581) e data/hora;
   - **atendimento iniciado por** — colaborador que assumiu a admissão pela primeira vez (RN-592) e data/hora;
-  - **admitido por** — colaborador que concluiu a admissão (RN-598) e data/hora.
+  - **admitido por** — colaborador que concluiu a admissão (RN-598) e data/hora; é quem aceitou o cadastro;
+  - **última versão do formulário salva por** — usuário (da empresa ou do escritório) que salvou o formulário do funcionário por último e data/hora. Diferente dos anteriores, este registro é atualizado a cada salvamento (inclusive na troca de documentos — RN-565).
 - **RN-551** — Esses registros **não podem ser alterados** depois de gravados, nem por administradores. Se a admissão for transferida para outro colaborador (RN-592), quem iniciou o atendimento continua o mesmo; a transferência fica no histórico (RN-575), e quem concluir fica registrado como quem admitiu.
 - **RN-552** — Os registros continuam válidos mesmo que o colaborador seja desativado depois (RN-233): o relatório continua mostrando o nome dele.
 - **RN-553** — **Relatório de admissões por colaborador**, com uma linha por colaborador:

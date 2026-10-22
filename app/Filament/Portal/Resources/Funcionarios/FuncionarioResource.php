@@ -5,6 +5,7 @@ namespace App\Filament\Portal\Resources\Funcionarios;
 use App\Domain\DocumentoFiscal;
 use App\Enums\SituacaoContrato;
 use App\Filament\Portal\Resources\Admissoes\AdmissaoResource;
+use App\Filament\Portal\Resources\Funcionarios\Pages\DocumentosFuncionario;
 use App\Filament\Portal\Resources\Funcionarios\Pages\ListFuncionarios;
 use App\Models\Funcionario;
 use BackedEnum;
@@ -65,6 +66,8 @@ class FuncionarioResource extends Resource
                     ->url(fn (Funcionario $record) => AdmissaoResource::canEdit($record->contratoAtual)
                         ? AdmissaoResource::getUrl('edit', ['record' => $record->contratoAtual])
                         : AdmissaoResource::getUrl('documentos', ['record' => $record->contratoAtual])),
+                Action::make('documentosFuncionario')->label('Documentos')->icon('heroicon-o-folder-open')->color('gray')
+                    ->url(fn (Funcionario $record) => DocumentosFuncionario::getUrl(['record' => $record])),
             ])
             ->recordUrl(fn (Funcionario $record) => $record->contratoAtual ? AdmissaoResource::getUrl('view', ['record' => $record->contratoAtual]) : null)
             ->defaultSort('nome');
@@ -72,6 +75,9 @@ class FuncionarioResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListFuncionarios::route('/')];
+        return [
+            'index' => ListFuncionarios::route('/'),
+            'documentos' => DocumentosFuncionario::route('/{record}/documentos'),
+        ];
     }
 }

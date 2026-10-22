@@ -2,6 +2,9 @@
 
 namespace App\Filament\Compartilhado;
 
+use App\Actions\Admissao\PreencherComDocumento;
+use App\Domain\Admissao\PreenchimentoAutomatico;
+use App\Domain\Admissao\ResumoAdmissao;
 use App\Domain\Admissao\VerificadorAdmissao;
 use App\Domain\DocumentoFiscal;
 use App\Domain\Opcoes;
@@ -9,8 +12,11 @@ use App\Enums\DocumentoAdmissao;
 use App\Enums\Permissao;
 use App\Enums\SituacaoContrato;
 use App\Enums\TipoContrato;
+use App\Exceptions\RegraDeNegocioException;
 use App\Models\Contrato;
+use App\Models\Empresa;
 use App\Models\Estabelecimento;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
@@ -19,25 +25,32 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\View;
+use Illuminate\Support\Arr;
 use Illuminate\Support\HtmlString;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
  * Formulário de admissão usado no portal (empresa) e no painel do escritório — regras.md RN-582.
- * Os dados técnicos do eSocial (RN-597) só aparecem para o escritório.
+ * Os dados técnicos do eSocial (RN-597) só aparecem para o escritório. As páginas de criação
+ * usam o trait FormularioDeAdmissao (aviso do preenchimento automático).
  */
 final class FormularioAdmissao
 {
     /**
      * @param  callable(): ?int  $empresaId  empresa da admissão (para listar os estabelecimentos)
+     * @param  Action|null  $acaoEnviar  botão de envio ao escritório; informado, mostra a aba "Resumo e envio" (RN-586)
      */
-    public static function componentes(bool $escritorio, callable $empresaId): array
+    public static function componentes(bool $escritorio, callable $empresaId, ?Action $acaoEnviar = null): array
     {
         return [
             Callout::make('Pendências para solicitar a admissão')
@@ -55,8 +68,10 @@ final class FormularioAdmissao
                 ->description('Aqui você atualiza o cadastro pessoal, dependentes e dados bancários. Contrato, documentos e dados do eSocial ficam só para consulta: mudanças de cargo, salário e jornada são feitas por histórico com vigência (RN-525).')
                 ->visible(fn (?Contrato $record) => self::somenteCadastro($record)),
 
-            Tabs::make('admissao')->columnSpanFull()->persistTabInQueryString()->tabs([
-                Tab::make('Dados pessoais')->icon('heroicon-o-user')->schema([
+            // abas trocadas no navegador: todas ficam na página, e os anexos em andamento não se perdem.
+            // O Resumo pede ao servidor a versão atual do formulário quando aparece (resumo-admissao.blade.php)
+            Tabs::make('admissao')->columnSpanFull()->persistTabInQueryString('aba')->tabs([
+                Tab::make('Dados pessoais')->key('dados-pessoais')->icon('heroicon-o-user')->schema([
                     Grid::make(3)->schema([
                         TextInput::make('funcionario.nome')->label('Nome completo')->required()->columnSpan(2),
                         TextInput::make('funcionario.cpf')->label('CPF')->required()->mask('999.999.999-99')
@@ -100,7 +115,7 @@ final class FormularioAdmissao
                     ]),
                 ]),
 
-                Tab::make('Dependentes')->icon('heroicon-o-users')->schema([
+                Tab::make('Dependentes')->key('dependentes')->icon('heroicon-o-users')->schema([
                     Repeater::make('funcionario.dependentes')->label('Dependentes')->defaultItems(0)->addActionLabel('Adicionar dependente')
                         ->columns(3)->schema([
                             TextInput::make('nome')->label('Nome')->required()->columnSpan(2),
@@ -117,7 +132,7 @@ final class FormularioAdmissao
                         ]),
                 ]),
 
-                Tab::make('Dados bancários')->icon('heroicon-o-banknotes')->columns(4)
+                Tab::make('Dados bancários')->key('dados-bancarios')->icon('heroicon-o-banknotes')->columns(4)
                     ->visible(fn () => self::podeVerSensiveis($escritorio))->schema([
                         TextInput::make('funcionario.banco')->label('Banco'),
                         TextInput::make('funcionario.agencia')->label('Agência'),
@@ -125,7 +140,7 @@ final class FormularioAdmissao
                         TextInput::make('funcionario.chave_pix')->label('ou chave Pix'),
                     ]),
 
-                Tab::make('Contrato')->icon('heroicon-o-briefcase')->columns(3)
+                Tab::make('Contrato')->key('contrato')->icon('heroicon-o-briefcase')->columns(3)
                     ->disabled(fn (?Contrato $record) => self::somenteCadastro($record))->schema([
                         DatePicker::make('data_admissao_prevista')->label('Data de admissão prevista')->required(),
                         TextInput::make('cargo')->label('Cargo'),
@@ -146,10 +161,16 @@ final class FormularioAdmissao
                         TextInput::make('horario')->label('Horário de trabalho')->placeholder('Seg a sex, 08h às 17h')->columnSpan(2),
                     ]),
 
-                Tab::make('Documentos')->icon('heroicon-o-paper-clip')->columns(2)
-                    ->disabled(fn (?Contrato $record) => self::somenteCadastro($record))->schema(self::camposDocumentos()),
+                Tab::make('Documentos')->key('documentos')->icon('heroicon-o-paper-clip')->columns(2)
+                    ->disabled(fn (?Contrato $record) => self::somenteCadastro($record))->schema([
+                        Callout::make('Preenchimento automático')
+                            ->info()->icon('heroicon-o-sparkles')->columnSpanFull()
+                            ->description('Ao anexar o documento com foto, o comprovante de residência e os demais documentos, os dados encontrados preenchem os campos que ainda estão vazios. Campos já preenchidos não são alterados. Confira tudo no Resumo antes de enviar.')
+                            ->visible(fn () => app(PreencherComDocumento::class)->disponivel()),
+                        ...self::camposDocumentos($empresaId),
+                    ]),
 
-                Tab::make('Dados do eSocial (escritório)')->icon('heroicon-o-building-office')->visible($escritorio)->columns(3)
+                Tab::make('Dados do eSocial (escritório)')->key('esocial')->icon('heroicon-o-building-office')->visible($escritorio)->columns(3)
                     ->disabled(fn (?Contrato $record) => self::somenteCadastro($record))->schema([
                         TextInput::make('matricula')->label('Matrícula'),
                         DatePicker::make('data_admissao')->label('Data de admissão efetiva'),
@@ -163,11 +184,75 @@ final class FormularioAdmissao
                     ]),
 
                 // RN-575 — histórico de cada etapa, com quem fez e quando
-                Tab::make('Linha do tempo')->icon('heroicon-o-clock')
+                Tab::make('Linha do tempo')->key('linha-do-tempo')->icon('heroicon-o-clock')
                     ->visible(fn (?Contrato $record) => $escritorio && $record !== null)
                     ->schema([View::make('filament.compartilhado.linha-do-tempo')]),
+
+                // RN-586 — última aba: confere tudo e envia ao escritório pelo botão no final
+                Tab::make('Resumo e envio')->key('resumo')->icon('heroicon-o-clipboard-document-check')
+                    ->visible($acaoEnviar !== null)
+                    ->schema([
+                        View::make('filament.compartilhado.resumo-admissao')->viewData(fn (Get $get, ?Contrato $record) => [
+                            'resumo' => self::resumo($get, $empresaId()),
+                            'salvo' => $record?->formulario_salvo_em
+                                ? 'Última versão salva por '.($record->formularioSalvoPor?->name ?? '—').' em '.$record->formulario_salvo_em->format('d/m/Y H:i').'.'
+                                : null,
+                        ]),
+                        Actions::make(array_filter([$acaoEnviar]))->key('envio')->alignEnd(),
+                    ]),
             ]),
         ];
+    }
+
+    /**
+     * Resumo e pendências a partir do formulário como está na tela (RN-583, RN-586).
+     *
+     * @return array{secoes: array<string, list<array{rotulo: string, valor: ?string, falta: bool}>>, documentos: list<array{rotulo: string, anexado: bool, obrigatorio: bool}>, pendencias: list<string>}
+     */
+    public static function resumo(Get $get, ?int $empresaId): array
+    {
+        $dados = collect(['funcionario', 'documentos', 'data_admissao_prevista', 'cargo', 'estabelecimento_id', 'salario', 'tipo_contrato',
+            'jornada_semanal', 'horario', 'experiencia_dias_1', 'data_termino'])->mapWithKeys(fn (string $campo) => [$campo => $get($campo)])->all();
+
+        return app(ResumoAdmissao::class)->montar($dados, Estabelecimento::where('empresa_id', $empresaId)->get()->pluck('rotulo', 'id')->all());
+    }
+
+    /**
+     * RN-579 — ao anexar um documento, a IA lê os dados pessoais e preenche só os campos vazios.
+     *
+     * @param  callable(): ?int  $empresaId
+     */
+    private static function preencherComDocumento(DocumentoAdmissao $tipo, mixed $arquivos, Get $get, Set $set, callable $empresaId): void
+    {
+        $arquivo = collect(Arr::wrap($arquivos))->first(fn ($a) => $a instanceof TemporaryUploadedFile);
+        $acao = app(PreencherComDocumento::class);
+
+        if (! $arquivo || ! $acao->disponivel() || app(PreenchimentoAutomatico::class)->camposDoDocumento($tipo) === []) {
+            return;
+        }
+
+        try {
+            $campos = $acao->executar(auth()->user(), Empresa::find($empresaId()), $tipo, (string) $arquivo->get(), (string) $arquivo->getMimeType(), (array) $get('funcionario'));
+        } catch (RegraDeNegocioException $e) {
+            Notification::make()->warning()->title($e->getMessage())->send();
+
+            return;
+        }
+
+        foreach ($campos as $campo => $valor) {
+            $set("funcionario.{$campo}", match ($campo) {
+                'cpf' => DocumentoFiscal::formatarCpf($valor),
+                'cep' => substr($valor, 0, 5).'-'.substr($valor, 5),
+                default => $valor,
+            });
+        }
+
+        $campos === []
+            ? Notification::make()->info()->title('Documento lido')->body('Nenhum campo vazio a preencher com os dados deste documento.')->send()
+            : Notification::make()->success()->title('Preenchemos '.count($campos).' '.(count($campos) === 1 ? 'campo' : 'campos').' com os dados do documento')
+                ->body(new HtmlString(collect($campos)->keys()->map(fn ($c) => '• '.e(PreenchimentoAutomatico::ROTULOS[$c]))->implode('<br>')
+                    .'<br><br>Confira os dados antes de enviar.'))
+                ->persistent()->send();
     }
 
     /** Funcionário já admitido: só o cadastro pessoal é editável. */
@@ -182,7 +267,10 @@ final class FormularioAdmissao
         return ! $escritorio || auth()->user()->can(Permissao::FuncionariosDadosSensiveis->value);
     }
 
-    public static function camposDocumentos(): array
+    /**
+     * @param  (callable(): ?int)|null  $empresaId  informado no formulário da admissão, liga o preenchimento automático (RN-579)
+     */
+    public static function camposDocumentos(?callable $empresaId = null): array
     {
         return collect(DocumentoAdmissao::cases())->map(fn (DocumentoAdmissao $tipo) => FileUpload::make("documentos.{$tipo->value}")
             ->label($tipo->getLabel().($tipo->obrigatorio() ? ' *' : ''))
@@ -195,6 +283,11 @@ final class FormularioAdmissao
             ->downloadable()
             ->openable()
             ->helperText(fn (?Contrato $record) => self::avaliacaoDoDocumento($record, $tipo))
+            ->afterStateUpdated(function ($state, Get $get, Set $set) use ($tipo, $empresaId): void {
+                if ($empresaId) {
+                    self::preencherComDocumento($tipo, $state, $get, $set, $empresaId);
+                }
+            })
         )->all();
     }
 

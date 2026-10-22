@@ -69,6 +69,7 @@ class SalvarAdmissao
 
             $this->sincronizarDependentes($funcionario, $dados['funcionario']['dependentes'] ?? []);
             $this->sincronizarDocumentos($contrato, $user, $dados['documentos'] ?? [], $dados['documentos_nomes'] ?? []);
+            $this->registrarQuemSalvou($contrato, $user);
 
             $contrato->registrarHistorico('criada', 'Admissão iniciada (rascunho).', null, $user);
 
@@ -82,6 +83,7 @@ class SalvarAdmissao
 
         return DB::transaction(function () use ($contrato, $user, $dados) {
             $funcionario = $contrato->funcionario;
+            $this->registrarQuemSalvou($contrato, $user);
             $antes = $funcionario->only(self::CAMPOS_FUNCIONARIO) + $contrato->only(self::CAMPOS_CONTRATO_EMPRESA);
 
             $dadosFuncionario = Arr::only($dados['funcionario'] ?? [], self::CAMPOS_FUNCIONARIO);
@@ -135,6 +137,12 @@ class SalvarAdmissao
         RegraDeNegocioException::se(! $user->can(Permissao::AdmissoesAnalisar->value), 'Você não tem permissão para editar admissões.');
         RegraDeNegocioException::se($contrato && ! in_array($contrato->situacao, [SituacaoContrato::Rascunho, SituacaoContrato::Devolvida, SituacaoContrato::EmAnalise, SituacaoContrato::Admitido], true),
             'Esta admissão não pode mais ser editada.');
+    }
+
+    /** RN-550 — quem salvou a última versão do formulário e quando. */
+    public function registrarQuemSalvou(Contrato $contrato, User $user): void
+    {
+        $contrato->forceFill(['formulario_salvo_por_id' => $user->id, 'formulario_salvo_em' => now()])->save();
     }
 
     private function sincronizarDependentes(Funcionario $funcionario, array $dependentes): void

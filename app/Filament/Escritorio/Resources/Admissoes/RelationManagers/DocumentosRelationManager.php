@@ -45,7 +45,10 @@ class DocumentosRelationManager extends RelationManager
                 TextColumn::make('avaliacao')->label('Avaliação')->badge()->placeholder('Em análise')
                     ->formatStateUsing(fn ($state) => $state === 'aceito' ? 'Aceito' : 'Recusado')
                     ->color(fn ($state) => $state === 'aceito' ? 'success' : 'danger')
-                    ->description(fn (Documento $record) => $record->motivo_recusa),
+                    ->description(fn (Documento $record) => collect([
+                        $record->motivo_recusa,
+                        $record->avaliado_em ? 'por '.($record->avaliadoPor?->name ?? '—').' em '.$record->avaliado_em->format('d/m/Y H:i') : null,
+                    ])->filter()->implode(' — ') ?: null),
             ])
             ->recordActions([
                 Action::make('aceitar')->label('Aceitar')->icon('heroicon-o-check')->color('success')->visible($podeAvaliar)

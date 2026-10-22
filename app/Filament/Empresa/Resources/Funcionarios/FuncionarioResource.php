@@ -4,6 +4,7 @@ namespace App\Filament\Empresa\Resources\Funcionarios;
 
 use App\Enums\Permissao;
 use App\Enums\SituacaoContrato;
+use App\Filament\Empresa\Resources\Funcionarios\Pages\DocumentosFuncionario;
 use App\Filament\Empresa\Resources\Funcionarios\Pages\ListFuncionarios;
 use App\Models\Funcionario;
 use BackedEnum;
@@ -59,6 +60,8 @@ class FuncionarioResource extends Resource
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'] ?? null, fn ($q, $v) => $q->whereHas('contratoAtual', fn ($q) => $q->where('situacao', $v)))),
             ])
             ->recordActions([
+                Action::make('documentosFuncionario')->label('Documentos')->icon('heroicon-o-folder-open')
+                    ->url(fn (Funcionario $record) => DocumentosFuncionario::getUrl(['record' => $record])),
                 Action::make('contrato')->label('Cadastro')->icon('heroicon-o-identification')
                     ->visible(fn (Funcionario $record) => $record->contratoAtual !== null && auth()->user()->can(Permissao::AdmissoesAnalisar->value))
                     ->url(fn (Funcionario $record) => CadastroFuncionarioResource::getUrl('view', ['record' => $record->contratoAtual])),
@@ -74,6 +77,9 @@ class FuncionarioResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListFuncionarios::route('/')];
+        return [
+            'index' => ListFuncionarios::route('/'),
+            'documentos' => DocumentosFuncionario::route('/{record}/documentos'),
+        ];
     }
 }

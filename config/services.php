@@ -40,4 +40,11 @@ return [
         'email' => env('COMERCIAL_EMAIL', 'comercial@contab.test'),
     ],
 
+    // regras.md RN-579 — leitura de documentos por IA no formulário de admissão.
+    // Sem chave, a leitura fica desligada e o formulário funciona só com preenchimento manual.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'modelo' => env('ANTHROPIC_MODELO', 'claude-opus-5-5'),
+    ],
+
 ];

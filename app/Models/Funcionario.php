@@ -47,6 +47,12 @@ class Funcionario extends Model
         return $this->hasOne(Contrato::class)->latestOfMany();
     }
 
+    /** RN-569 — todos os documentos do funcionário, de todos os contratos, inclusive versões anteriores. */
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(Documento::class);
+    }
+
     public function getCpfFormatadoAttribute(): string
     {
         return DocumentoFiscal::formatarCpf($this->cpf);
